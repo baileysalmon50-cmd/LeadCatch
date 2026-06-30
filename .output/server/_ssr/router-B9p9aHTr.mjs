@@ -210,45 +210,55 @@ var Route$2 = createFileRoute("/")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter, "component")
 });
-var schema = objectType({
-	user_id: stringType().uuid(),
-	name: stringType().max(200).optional(),
-	phone: stringType().max(50).optional(),
-	email: stringType().email().max(255).optional(),
-	business_need: stringType().max(2e3).optional(),
-	callback_time: stringType().max(200).optional()
-});
 var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: { POST: async ({ request }) => {
 	const expected = process.env.WEBHOOK_SECRET;
 	const headerSecret = request.headers.get("x-webhook-secret");
-	const raw = await request.json().catch(() => ({}));
-	const bodySecret = raw.webhook_secret;
-	if (expected && headerSecret !== expected && bodySecret !== expected) return new Response(JSON.stringify({ error: "Invalid secret" }), {
+	if (!expected || headerSecret !== expected) return new Response(JSON.stringify({ error: "Unauthorized" }), {
 		status: 401,
 		headers: { "Content-Type": "application/json" }
 	});
-	const parsed = schema.safeParse(raw);
-	if (!parsed.success) return new Response(JSON.stringify({
-		error: "Invalid payload",
-		details: parsed.error.flatten()
-	}), {
-		status: 400,
-		headers: { "Content-Type": "application/json" }
-	});
-	const { supabaseAdmin } = await import("./client.server-D1oHePJa.mjs");
-	const { error } = await supabaseAdmin.from("leads").insert({
-		user_id: parsed.data.user_id,
-		name: parsed.data.name || "Unknown caller",
-		phone: parsed.data.phone || null,
-		email: parsed.data.email || null,
-		business_need: parsed.data.business_need || null,
-		callback_time: parsed.data.callback_time || null
-	});
-	if (error) return new Response(JSON.stringify({ error: error.message }), {
-		status: 500,
-		headers: { "Content-Type": "application/json" }
-	});
-	return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
+	try {
+		const body = await request.json();
+		const userId = body.user_id || request.headers.get("x-user-id") || "default-user";
+		const extracted = body.extracted_data || {};
+		const notes = [
+			`Call ID: ${body.call_id || "N/A"}`,
+			"",
+			"Transcript:",
+			body.transcript || "N/A",
+			"",
+			`Recording: ${body.recording_url || "N/A"}`
+		].join("\n");
+		const leadData = {
+			user_id: userId,
+			name: extracted.customer_name || body.customer_name || "Unknown caller",
+			phone: extracted.customer_phone || body.customer_phone || null,
+			email: extracted.customer_email || body.customer_email || null,
+			business_need: extracted.service_type || body.service_type || null,
+			callback_time: extracted.preferred_callback_time || body.callback_time || null,
+			notes,
+			status: "new"
+		};
+		const { supabaseAdmin } = await import("./client.server-D1oHePJa.mjs");
+		const { error } = await supabaseAdmin.from("leads").insert([leadData]);
+		if (error) {
+			console.error("Supabase error:", error);
+			return new Response(JSON.stringify({ error: error.message }), {
+				status: 400,
+				headers: { "Content-Type": "application/json" }
+			});
+		}
+		return new Response(JSON.stringify({
+			success: true,
+			lead_id: body.call_id
+		}), { headers: { "Content-Type": "application/json" } });
+	} catch (error) {
+		console.error("Webhook error:", error);
+		return new Response(JSON.stringify({ error: "Internal server error" }), {
+			status: 500,
+			headers: { "Content-Type": "application/json" }
+		});
+	}
 } } } });
 var _supabase = null;
 function getSupabase() {
