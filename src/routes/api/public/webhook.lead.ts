@@ -8,12 +8,18 @@ type RetellWebhookPayload = {
     to_number?: string;
     transcript?: string;
     recording_url?: string;
-    retell_llm_dynamic_variables?: Record<string, string | null | undefined>;
+    call_analysis?: {
+      call_summary?: string;
+      custom_analysis_data?: Record<string, string | null | undefined>;
+      [key: string]: unknown;
+    };
   };
 };
 
 const UUID_V4_OR_V5_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+let hasLoggedAnalysisStructure = false;
 
 export const Route = createFileRoute("/api/public/webhook/lead")({
   server: {
@@ -40,7 +46,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
 
         try {
           const body = (await request.json()) as RetellWebhookPayload;
-          if (body.event !== "call_ended") {
+          if (body.event !== "call_analyzed") {
             return new Response(JSON.stringify({ success: true, ignored: true }), {
               status: 200,
               headers: { "Content-Type": "application/json" },
@@ -63,22 +69,25 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             });
           }
 
-          const extracted = call.retell_llm_dynamic_variables || {};
-          const customerName = extracted.customer_name || "Unknown caller";
-          const customerPhone = extracted.customer_phone || call.from_number || null;
-          const businessNeed = extracted.service_type || null;
-          const vehicleInfo = extracted.vehicle_info || null;
+          if (!hasLoggedAnalysisStructure) {
+            console.log("Retell call_analysis structure:", call.call_analysis);
+            hasLoggedAnalysisStructure = true;
+          }
 
-          const additionalVars = Object.entries(extracted).filter(
-            ([key]) => !["customer_name", "customer_phone", "service_type", "vehicle_info"].includes(key),
-          );
+          const customAnalysisData = call.call_analysis?.custom_analysis_data || {};
+          const customerName = customAnalysisData.customer_name || "Unknown caller";
+          const customerPhone = customAnalysisData.callback_phone || call.from_number || null;
+          const businessNeed = customAnalysisData.service_needed || null;
+          const vehicle = customAnalysisData.vehicle || null;
+          const urgency = customAnalysisData.symptoms_urgency || null;
+          const callSummary = call.call_analysis?.call_summary || null;
 
           const notesParts = [
             `Call ID: ${callId}`,
-            vehicleInfo ? `Vehicle Info: ${vehicleInfo}` : null,
-            additionalVars.length
-              ? `Extracted Variables: ${JSON.stringify(Object.fromEntries(additionalVars))}`
-              : null,
+            vehicle ? `Vehicle: ${vehicle}` : null,
+            urgency ? `Urgency: ${urgency}` : null,
+            businessNeed ? `Service Needed: ${businessNeed}` : null,
+            callSummary ? `Call Summary: ${callSummary}` : null,
             call.transcript ? `Transcript:\n${call.transcript}` : null,
             call.recording_url ? `Recording URL: ${call.recording_url}` : null,
           ].filter(Boolean);

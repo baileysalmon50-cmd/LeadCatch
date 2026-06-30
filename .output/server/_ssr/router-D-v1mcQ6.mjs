@@ -16,7 +16,7 @@ import { t as Route$12 } from "./route-Dri6_4dd.mjs";
 import { t as Route$13 } from "./settings-BYhoHAqS.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-CqQjIrmR.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-D-v1mcQ6.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-DZTyTnGS.css";
@@ -210,6 +210,7 @@ var Route$2 = createFileRoute("/")({
 	component: lazyRouteComponent($$splitComponentImporter, "component")
 });
 var UUID_V4_OR_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+var hasLoggedAnalysisStructure = false;
 var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: { POST: async ({ request }) => {
 	const url = new URL(request.url);
 	const userId = url.searchParams.get("user_id");
@@ -225,7 +226,7 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 	});
 	try {
 		const body = await request.json();
-		if (body.event !== "call_ended") return new Response(JSON.stringify({
+		if (body.event !== "call_analyzed") return new Response(JSON.stringify({
 			success: true,
 			ignored: true
 		}), {
@@ -242,21 +243,23 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 			status: 400,
 			headers: { "Content-Type": "application/json" }
 		});
-		const extracted = call.retell_llm_dynamic_variables || {};
-		const customerName = extracted.customer_name || "Unknown caller";
-		const customerPhone = extracted.customer_phone || call.from_number || null;
-		const businessNeed = extracted.service_type || null;
-		const vehicleInfo = extracted.vehicle_info || null;
-		const additionalVars = Object.entries(extracted).filter(([key]) => ![
-			"customer_name",
-			"customer_phone",
-			"service_type",
-			"vehicle_info"
-		].includes(key));
+		if (!hasLoggedAnalysisStructure) {
+			console.log("Retell call_analysis structure:", call.call_analysis);
+			hasLoggedAnalysisStructure = true;
+		}
+		const customAnalysisData = call.call_analysis?.custom_analysis_data || {};
+		const customerName = customAnalysisData.customer_name || "Unknown caller";
+		const customerPhone = customAnalysisData.callback_phone || call.from_number || null;
+		const businessNeed = customAnalysisData.service_needed || null;
+		const vehicle = customAnalysisData.vehicle || null;
+		const urgency = customAnalysisData.symptoms_urgency || null;
+		const callSummary = call.call_analysis?.call_summary || null;
 		const notes = [
 			`Call ID: ${callId}`,
-			vehicleInfo ? `Vehicle Info: ${vehicleInfo}` : null,
-			additionalVars.length ? `Extracted Variables: ${JSON.stringify(Object.fromEntries(additionalVars))}` : null,
+			vehicle ? `Vehicle: ${vehicle}` : null,
+			urgency ? `Urgency: ${urgency}` : null,
+			businessNeed ? `Service Needed: ${businessNeed}` : null,
+			callSummary ? `Call Summary: ${callSummary}` : null,
 			call.transcript ? `Transcript:\n${call.transcript}` : null,
 			call.recording_url ? `Recording URL: ${call.recording_url}` : null
 		].filter(Boolean).join("\n\n");
