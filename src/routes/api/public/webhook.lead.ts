@@ -1,21 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 
-// Public webhook endpoint for Make.com / Twilio / Bland AI integrations.
-// POST /api/public/webhook/lead
-// Body: { user_id, name?, phone?, email?, business_need?, callback_time?, webhook_secret }
-//
-// Set WEBHOOK_SECRET in your project secrets. The caller must include it
-// either as `x-webhook-secret` header or in the JSON body.
-
-const schema = z.object({
-  user_id: z.string().uuid(),
-  name: z.string().max(200).optional(),
-  phone: z.string().max(50).optional(),
-  email: z.string().email().max(255).optional(),
-  business_need: z.string().max(2000).optional(),
-  callback_time: z.string().max(200).optional(),
-});
+type RetellWebhookPayload = {
+  call_id?: string;
+  transcript?: string;
+  recording_url?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
+  service_type?: string;
+  callback_time?: string;
+  extracted_data?: {
+    customer_name?: string;
+    customer_phone?: string;
+    customer_email?: string;
+    service_type?: string;
+    preferred_callback_time?: string;
+  };
+};
 
 export const Route = createFileRoute("/api/public/webhook/lead")({
   server: {
@@ -23,26 +24,57 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
       POST: async ({ request }) => {
         const expected = process.env.WEBHOOK_SECRET;
         const headerSecret = request.headers.get("x-webhook-secret");
-        const raw = await request.json().catch(() => ({}));
-        const bodySecret = (raw as { webhook_secret?: string }).webhook_secret;
-        if (expected && headerSecret !== expected && bodySecret !== expected) {
-          return new Response(JSON.stringify({ error: "Invalid secret" }), { status: 401, headers: { "Content-Type": "application/json" } });
+        if (!expected || headerSecret !== expected) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
         }
-        const parsed = schema.safeParse(raw);
-        if (!parsed.success) {
-          return new Response(JSON.stringify({ error: "Invalid payload", details: parsed.error.flatten() }), { status: 400, headers: { "Content-Type": "application/json" } });
+
+        try {
+          const body = (await request.json()) as RetellWebhookPayload;
+          const extracted = body.extracted_data || {};
+          const notes = [
+            `Call ID: ${body.call_id || "N/A"}`,
+            "",
+            "Transcript:",
+            body.transcript || "N/A",
+            "",
+            `Recording: ${body.recording_url || "N/A"}`,
+          ].join("\n");
+
+          const leadData = {
+            user_id: request.headers.get("x-user-id") || "default-user",
+            name: extracted.customer_name || body.customer_name || "Unknown caller",
+            phone: extracted.customer_phone || body.customer_phone || null,
+            email: extracted.customer_email || body.customer_email || null,
+            business_need: extracted.service_type || body.service_type || null,
+            callback_time: extracted.preferred_callback_time || body.callback_time || null,
+            notes,
+            status: "new",
+          };
+
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { error } = await supabaseAdmin.from("leads").insert([leadData]);
+
+          if (error) {
+            console.error("Supabase error:", error);
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          return new Response(JSON.stringify({ success: true, lead_id: body.call_id }), {
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (error) {
+          console.error("Webhook error:", error);
+          return new Response(JSON.stringify({ error: "Internal server error" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
         }
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { error } = await supabaseAdmin.from("leads").insert({
-          user_id: parsed.data.user_id,
-          name: parsed.data.name || "Unknown caller",
-          phone: parsed.data.phone || null,
-          email: parsed.data.email || null,
-          business_need: parsed.data.business_need || null,
-          callback_time: parsed.data.callback_time || null,
-        });
-        if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { "Content-Type": "application/json" } });
-        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
       },
     },
   },
