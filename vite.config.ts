@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    // Override default Cloudflare preset for Node.js/Railway deployment
+    preset: "node-server",
+  },
 });
