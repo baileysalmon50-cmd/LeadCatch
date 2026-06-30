@@ -1,4 +1,4 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DOKi-rR6.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DsJjfs0d.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "/workspaces/LeadCatch/src/routes/__root.tsx",
@@ -13,7 +13,7 @@ var tsrStartManifest = () => ({ routes: {
 			"/api/public/webhook/lead"
 		],
 		preloads: [
-			"/assets/index-DT_o7aXl.js",
+			"/assets/index-CpdVSqH5.js",
 			"/assets/link-BvodxWot.js",
 			"/assets/invariant-DEEwAagU.js",
 			"/assets/redirect-C-eRQtnH.js"
@@ -21,7 +21,7 @@ var tsrStartManifest = () => ({ routes: {
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-DT_o7aXl.js"
+			src: "/assets/index-CpdVSqH5.js"
 		} }]
 	},
 	"/": {
@@ -49,7 +49,7 @@ var tsrStartManifest = () => ({ routes: {
 			"/_authenticated/settings"
 		],
 		preloads: [
-			"/assets/route-OKL0T0ws.js",
+			"/assets/route-BU4q4Zdf.js",
 			"/assets/createLucideIcon-BXeNn-yJ.js",
 			"/assets/chart-column-tOf71Ekp.js",
 			"/assets/credit-card-BA4fNe9f.js",
@@ -61,7 +61,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/auth.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/auth-DXAVLyN_.js",
+			"/assets/auth-DH7LrFeu.js",
 			"/assets/createLucideIcon-BXeNn-yJ.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/logo-B7ZPBhTP.js",
@@ -72,22 +72,22 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/pricing.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/pricing-nZhM7iTv.js",
-			"/assets/payments.functions-CVrx3IoQ.js",
+			"/assets/pricing-wwzjKIww.js",
+			"/assets/payments.functions-DVdyE68q.js",
 			"/assets/stripe-uNQwPIhl.js",
 			"/assets/createLucideIcon-BXeNn-yJ.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/prop-types-YhqGBo7c.js",
 			"/assets/check-cOqjefB5.js",
 			"/assets/logo-B7ZPBhTP.js",
-			"/assets/dialog-Bdwn6c_l.js"
+			"/assets/dialog-Ba5O9YNt.js"
 		]
 	},
 	"/reset-password": {
 		filePath: "/workspaces/LeadCatch/src/routes/reset-password.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/reset-password-C49ec3RB.js",
+			"/assets/reset-password-BOaOiz3K.js",
 			"/assets/createLucideIcon-BXeNn-yJ.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/logo-B7ZPBhTP.js",
@@ -98,7 +98,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/_authenticated/analytics.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/analytics-DsnOspqC.js",
+			"/assets/analytics-BuRG1aDC.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/prop-types-YhqGBo7c.js",
 			"/assets/download-BJFcff6N.js"
@@ -108,27 +108,27 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/_authenticated/dashboard.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/dashboard-CC9eNU8Z.js",
+			"/assets/dashboard-djw7mRVR.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/textarea-CYCCcmsR.js",
-			"/assets/select-BUG9DRL5.js",
+			"/assets/select-B1U91Cs1.js",
 			"/assets/clock-C4gJbkvM.js",
-			"/assets/add-lead-dialog-BiYWgWJe.js",
+			"/assets/add-lead-dialog-Di9TZGz4.js",
 			"/assets/phone-off-DFBpt7Xd.js",
-			"/assets/dialog-Bdwn6c_l.js"
+			"/assets/dialog-Ba5O9YNt.js"
 		]
 	},
 	"/_authenticated/leads": {
 		filePath: "/workspaces/LeadCatch/src/routes/_authenticated/leads.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/leads-C_CGNPcv.js",
+			"/assets/leads-PM6dm1hT.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/textarea-CYCCcmsR.js",
-			"/assets/select-BUG9DRL5.js",
+			"/assets/select-B1U91Cs1.js",
 			"/assets/download-BJFcff6N.js",
-			"/assets/add-lead-dialog-BiYWgWJe.js",
-			"/assets/dialog-Bdwn6c_l.js",
+			"/assets/add-lead-dialog-Di9TZGz4.js",
+			"/assets/dialog-Ba5O9YNt.js",
 			"/assets/dist-B_WATbMC.js",
 			"/assets/label-CKZLJ00T.js"
 		]
@@ -137,7 +137,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/_authenticated/onboarding.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/onboarding-Bd6mTw1E.js",
+			"/assets/onboarding-zXTkflh9.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/arrow-right-Cseobd3-.js",
 			"/assets/check-cOqjefB5.js",
@@ -153,11 +153,11 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/_authenticated/settings.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/settings-Tw0jCFiD.js",
+			"/assets/settings-Cmqwavgz.js",
 			"/assets/card-DWRTYDQW.js",
 			"/assets/bell-Da40fvxi.js",
 			"/assets/textarea-CYCCcmsR.js",
-			"/assets/select-BUG9DRL5.js",
+			"/assets/select-B1U91Cs1.js",
 			"/assets/phone-BBnN8o8U.js",
 			"/assets/dist-B_WATbMC.js",
 			"/assets/dist-B4d_Lhja.js",
@@ -168,7 +168,7 @@ var tsrStartManifest = () => ({ routes: {
 		filePath: "/workspaces/LeadCatch/src/routes/checkout.return.tsx",
 		children: void 0,
 		preloads: [
-			"/assets/checkout.return-C67jeeGC.js",
+			"/assets/checkout.return-Vjk_Rgma.js",
 			"/assets/createLucideIcon-BXeNn-yJ.js",
 			"/assets/card-DWRTYDQW.js"
 		]

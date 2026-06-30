@@ -10,19 +10,19 @@ import { O as ArrowRight, S as Clock, T as Check, _ as Info, d as Phone, m as Me
 import { n as Label, t as Input } from "./label-D2fwATjQ.mjs";
 import { t as Logo } from "./logo-2UeFUhWv.mjs";
 import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
-import { t as Route } from "./onboarding-DMuxylKF.mjs";
+import { t as Route } from "./onboarding-gLp5v6eb.mjs";
 import { n as CollapsibleTrigger$1, r as Root, t as CollapsibleContent$1 } from "../_libs/radix-ui__react-collapsible.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/onboarding-B5ZV4R23.js
+//#region node_modules/.nitro/vite/services/ssr/assets/onboarding-PjKLawwl.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var Collapsible = Root;
 var CollapsibleTrigger = CollapsibleTrigger$1;
 var CollapsibleContent = CollapsibleContent$1;
+var RETELL_PHONE_NUMBER = "1(754)341-1322";
 function Onboarding() {
 	const { user } = Route.useRouteContext();
 	const navigate = useNavigate();
 	const [step, setStep] = (0, import_react.useState)(1);
-	const [phone, setPhone] = (0, import_react.useState)("");
 	const [forwardPhone, setForwardPhone] = (0, import_react.useState)("");
 	const [greeting, setGreeting] = (0, import_react.useState)("");
 	const [start, setStart] = (0, import_react.useState)("09:00");
@@ -31,11 +31,8 @@ function Onboarding() {
 	const [guidesOpen, setGuidesOpen] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => {
 		(async () => {
-			const [{ data: p }, { data: s }] = await Promise.all([supabase.from("profiles").select("assigned_phone, forward_phone").eq("id", user.id).maybeSingle(), supabase.from("settings").select("ai_greeting, callback_hours_start, callback_hours_end").eq("user_id", user.id).maybeSingle()]);
-			if (p) {
-				setPhone(p.assigned_phone);
-				setForwardPhone(p.forward_phone || "");
-			}
+			const [{ data: p }, { data: s }] = await Promise.all([supabase.from("profiles").select("forward_phone").eq("id", user.id).maybeSingle(), supabase.from("settings").select("ai_greeting, callback_hours_start, callback_hours_end").eq("user_id", user.id).maybeSingle()]);
+			if (p) setForwardPhone(p.forward_phone || "");
 			if (s) {
 				setGreeting(s.ai_greeting);
 				setStart(s.callback_hours_start);
@@ -117,7 +114,7 @@ function Onboarding() {
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 										className: "text-2xl font-semibold font-mono",
-										children: phone || "..."
+										children: RETELL_PHONE_NUMBER
 									}),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 										className: "text-xs text-muted-foreground",

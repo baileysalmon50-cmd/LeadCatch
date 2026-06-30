@@ -17,6 +17,7 @@ export type Database = {
       leads: {
         Row: {
           business_need: string | null
+          call_id: string | null
           callback_time: string | null
           created_at: string
           email: string | null
@@ -30,6 +31,7 @@ export type Database = {
         }
         Insert: {
           business_need?: string | null
+          call_id?: string | null
           callback_time?: string | null
           created_at?: string
           email?: string | null
@@ -43,6 +45,7 @@ export type Database = {
         }
         Update: {
           business_need?: string | null
+          call_id?: string | null
           callback_time?: string | null
           created_at?: string
           email?: string | null

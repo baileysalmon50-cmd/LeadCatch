@@ -6,18 +6,17 @@ import { I as useRouter, c as HeadContent, d as createRouter, f as Outlet, g as 
 import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { t as Route$6 } from "./analytics-BqBBrcPC.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
-import { n as objectType, r as stringType } from "../_libs/zod.mjs";
 import { t as Route$7 } from "./auth-CyVGWgkH.mjs";
 import { t as Route$8 } from "./checkout.return-BoZSDKbP.mjs";
 import { t as Route$9 } from "./dashboard-ChtUCbWo.mjs";
 import { t as Route$10 } from "./leads-k3OoQnK7.mjs";
-import { t as Route$11 } from "./onboarding-DMuxylKF.mjs";
+import { t as Route$11 } from "./onboarding-gLp5v6eb.mjs";
 import { r as verifyWebhook } from "./stripe.server-CZmSH6zg.mjs";
 import { t as Route$12 } from "./route-Dri6_4dd.mjs";
-import { t as Route$13 } from "./settings-BSGImc0K.mjs";
+import { t as Route$13 } from "./settings-BYhoHAqS.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-B9p9aHTr.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-CqQjIrmR.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-DZTyTnGS.css";
@@ -210,38 +209,91 @@ var Route$2 = createFileRoute("/")({
 	}] }),
 	component: lazyRouteComponent($$splitComponentImporter, "component")
 });
+var UUID_V4_OR_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: { POST: async ({ request }) => {
+	const url = new URL(request.url);
+	const userId = url.searchParams.get("user_id");
+	const secret = url.searchParams.get("secret");
 	const expected = process.env.WEBHOOK_SECRET;
-	const headerSecret = request.headers.get("x-webhook-secret");
-	if (!expected || headerSecret !== expected) return new Response(JSON.stringify({ error: "Unauthorized" }), {
+	if (!expected || secret !== expected) return new Response(JSON.stringify({ error: "Unauthorized" }), {
 		status: 401,
+		headers: { "Content-Type": "application/json" }
+	});
+	if (!userId || !UUID_V4_OR_V5_REGEX.test(userId)) return new Response(JSON.stringify({ error: "Invalid user_id" }), {
+		status: 400,
 		headers: { "Content-Type": "application/json" }
 	});
 	try {
 		const body = await request.json();
-		const userId = body.user_id || request.headers.get("x-user-id") || "default-user";
-		const extracted = body.extracted_data || {};
+		if (body.event !== "call_ended") return new Response(JSON.stringify({
+			success: true,
+			ignored: true
+		}), {
+			status: 200,
+			headers: { "Content-Type": "application/json" }
+		});
+		const call = body.call;
+		if (!call) return new Response(JSON.stringify({ error: "Missing call object" }), {
+			status: 400,
+			headers: { "Content-Type": "application/json" }
+		});
+		const callId = call?.call_id;
+		if (!callId) return new Response(JSON.stringify({ error: "Missing call_id" }), {
+			status: 400,
+			headers: { "Content-Type": "application/json" }
+		});
+		const extracted = call.retell_llm_dynamic_variables || {};
+		const customerName = extracted.customer_name || "Unknown caller";
+		const customerPhone = extracted.customer_phone || call.from_number || null;
+		const businessNeed = extracted.service_type || null;
+		const vehicleInfo = extracted.vehicle_info || null;
+		const additionalVars = Object.entries(extracted).filter(([key]) => ![
+			"customer_name",
+			"customer_phone",
+			"service_type",
+			"vehicle_info"
+		].includes(key));
 		const notes = [
-			`Call ID: ${body.call_id || "N/A"}`,
-			"",
-			"Transcript:",
-			body.transcript || "N/A",
-			"",
-			`Recording: ${body.recording_url || "N/A"}`
-		].join("\n");
+			`Call ID: ${callId}`,
+			vehicleInfo ? `Vehicle Info: ${vehicleInfo}` : null,
+			additionalVars.length ? `Extracted Variables: ${JSON.stringify(Object.fromEntries(additionalVars))}` : null,
+			call.transcript ? `Transcript:\n${call.transcript}` : null,
+			call.recording_url ? `Recording URL: ${call.recording_url}` : null
+		].filter(Boolean).join("\n\n");
+		const { supabaseAdmin } = await import("./client.server-D1oHePJa.mjs");
+		const { data: existingLead, error: selectError } = await supabaseAdmin.from("leads").select("id").eq("call_id", callId).limit(1).maybeSingle();
+		if (selectError) {
+			console.error("Supabase lookup error:", selectError);
+			return new Response(JSON.stringify({ error: selectError.message }), {
+				status: 400,
+				headers: { "Content-Type": "application/json" }
+			});
+		}
+		if (existingLead) return new Response(JSON.stringify({
+			success: true,
+			duplicate: true
+		}), {
+			status: 200,
+			headers: { "Content-Type": "application/json" }
+		});
 		const leadData = {
 			user_id: userId,
-			name: extracted.customer_name || body.customer_name || "Unknown caller",
-			phone: extracted.customer_phone || body.customer_phone || null,
-			email: extracted.customer_email || body.customer_email || null,
-			business_need: extracted.service_type || body.service_type || null,
-			callback_time: extracted.preferred_callback_time || body.callback_time || null,
+			call_id: callId,
+			name: customerName,
+			phone: customerPhone,
+			business_need: businessNeed,
 			notes,
 			status: "new"
 		};
-		const { supabaseAdmin } = await import("./client.server-D1oHePJa.mjs");
 		const { error } = await supabaseAdmin.from("leads").insert([leadData]);
 		if (error) {
+			if (error.code === "23505") return new Response(JSON.stringify({
+				success: true,
+				duplicate: true
+			}), {
+				status: 200,
+				headers: { "Content-Type": "application/json" }
+			});
 			console.error("Supabase error:", error);
 			return new Response(JSON.stringify({ error: error.message }), {
 				status: 400,
@@ -250,7 +302,7 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 		}
 		return new Response(JSON.stringify({
 			success: true,
-			lead_id: body.call_id
+			lead_id: callId
 		}), { headers: { "Content-Type": "application/json" } });
 	} catch (error) {
 		console.error("Webhook error:", error);

@@ -10,9 +10,9 @@ import { D as Bell, d as Phone, i as User, k as Sparkles, x as CreditCard } from
 import { n as Label, t as Input } from "./label-D2fwATjQ.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DYjyjhZD.mjs";
 import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
-import { t as Route } from "./settings-BSGImc0K.mjs";
+import { t as Route } from "./settings-BYhoHAqS.mjs";
 import { n as SwitchThumb, t as Switch$1 } from "../_libs/radix-ui__react-switch.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/settings-kjPAseX5.js
+//#region node_modules/.nitro/vite/services/ssr/assets/settings-Ck8Oc0bl.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var Switch = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Switch$1, {
@@ -22,6 +22,7 @@ var Switch = import_react.forwardRef(({ className, ...props }, ref) => /* @__PUR
 	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SwitchThumb, { className: cn("pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0") })
 }));
 Switch.displayName = Switch$1.displayName;
+var RETELL_PHONE_NUMBER = "1(754)341-1322";
 var TIMEZONES = [
 	"America/New_York",
 	"America/Chicago",
@@ -107,7 +108,7 @@ function SettingsPage() {
 								children: "Your LeadCatch AI number"
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "text-xl font-semibold font-mono mt-1",
-								children: profile.assigned_phone
+								children: RETELL_PHONE_NUMBER
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Your business phone" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {

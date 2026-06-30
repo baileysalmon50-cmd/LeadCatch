@@ -1,65 +1,133 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 type RetellWebhookPayload = {
-  user_id?: string;
-  call_id?: string;
-  transcript?: string;
-  recording_url?: string;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_email?: string;
-  service_type?: string;
-  callback_time?: string;
-  extracted_data?: {
-    customer_name?: string;
-    customer_phone?: string;
-    customer_email?: string;
-    service_type?: string;
-    preferred_callback_time?: string;
+  event?: string;
+  call?: {
+    call_id?: string;
+    from_number?: string;
+    to_number?: string;
+    transcript?: string;
+    recording_url?: string;
+    retell_llm_dynamic_variables?: Record<string, string | null | undefined>;
   };
 };
+
+const UUID_V4_OR_V5_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const Route = createFileRoute("/api/public/webhook/lead")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const url = new URL(request.url);
+        const userId = url.searchParams.get("user_id");
+        const secret = url.searchParams.get("secret");
         const expected = process.env.WEBHOOK_SECRET;
-        const headerSecret = request.headers.get("x-webhook-secret");
-        if (!expected || headerSecret !== expected) {
+
+        if (!expected || secret !== expected) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
           });
         }
 
+        if (!userId || !UUID_V4_OR_V5_REGEX.test(userId)) {
+          return new Response(JSON.stringify({ error: "Invalid user_id" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
         try {
           const body = (await request.json()) as RetellWebhookPayload;
-          const userId = body.user_id || request.headers.get("x-user-id") || "default-user";
-          const extracted = body.extracted_data || {};
-          const notes = [
-            `Call ID: ${body.call_id || "N/A"}`,
-            "",
-            "Transcript:",
-            body.transcript || "N/A",
-            "",
-            `Recording: ${body.recording_url || "N/A"}`,
-          ].join("\n");
+          if (body.event !== "call_ended") {
+            return new Response(JSON.stringify({ success: true, ignored: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          const call = body.call;
+          if (!call) {
+            return new Response(JSON.stringify({ error: "Missing call object" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          const callId = call?.call_id;
+          if (!callId) {
+            return new Response(JSON.stringify({ error: "Missing call_id" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          const extracted = call.retell_llm_dynamic_variables || {};
+          const customerName = extracted.customer_name || "Unknown caller";
+          const customerPhone = extracted.customer_phone || call.from_number || null;
+          const businessNeed = extracted.service_type || null;
+          const vehicleInfo = extracted.vehicle_info || null;
+
+          const additionalVars = Object.entries(extracted).filter(
+            ([key]) => !["customer_name", "customer_phone", "service_type", "vehicle_info"].includes(key),
+          );
+
+          const notesParts = [
+            `Call ID: ${callId}`,
+            vehicleInfo ? `Vehicle Info: ${vehicleInfo}` : null,
+            additionalVars.length
+              ? `Extracted Variables: ${JSON.stringify(Object.fromEntries(additionalVars))}`
+              : null,
+            call.transcript ? `Transcript:\n${call.transcript}` : null,
+            call.recording_url ? `Recording URL: ${call.recording_url}` : null,
+          ].filter(Boolean);
+
+          const notes = notesParts.join("\n\n");
+
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: existingLead, error: selectError } = await supabaseAdmin
+            .from("leads")
+            .select("id")
+            .eq("call_id", callId)
+            .limit(1)
+            .maybeSingle();
+
+          if (selectError) {
+            console.error("Supabase lookup error:", selectError);
+            return new Response(JSON.stringify({ error: selectError.message }), {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          if (existingLead) {
+            return new Response(JSON.stringify({ success: true, duplicate: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
 
           const leadData = {
             user_id: userId,
-            name: extracted.customer_name || body.customer_name || "Unknown caller",
-            phone: extracted.customer_phone || body.customer_phone || null,
-            email: extracted.customer_email || body.customer_email || null,
-            business_need: extracted.service_type || body.service_type || null,
-            callback_time: extracted.preferred_callback_time || body.callback_time || null,
+            call_id: callId,
+            name: customerName,
+            phone: customerPhone,
+            business_need: businessNeed,
             notes,
-            status: "new",
+            status: "new" as const,
           };
 
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { error } = await supabaseAdmin.from("leads").insert([leadData]);
 
           if (error) {
+            if (error.code === "23505") {
+              return new Response(JSON.stringify({ success: true, duplicate: true }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+
             console.error("Supabase error:", error);
             return new Response(JSON.stringify({ error: error.message }), {
               status: 400,
@@ -67,7 +135,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             });
           }
 
-          return new Response(JSON.stringify({ success: true, lead_id: body.call_id }), {
+          return new Response(JSON.stringify({ success: true, lead_id: callId }), {
             headers: { "Content-Type": "application/json" },
           });
         } catch (error) {
