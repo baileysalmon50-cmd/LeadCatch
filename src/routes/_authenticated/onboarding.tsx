@@ -11,6 +11,8 @@ import { Logo } from "@/components/logo";
 import { Phone, MessageSquare, Clock, ArrowRight, Check, Info, ChevronDown, Smartphone, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
+const RETELL_PHONE_NUMBER = "1(754)341-1322";
+
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
 });
@@ -19,7 +21,6 @@ function Onboarding() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [phone, setPhone] = useState("");          // assigned_phone (LeadCatch AI number)
   const [forwardPhone, setForwardPhone] = useState(""); // their business number
   const [greeting, setGreeting] = useState("");
   const [start, setStart] = useState("09:00");
@@ -30,10 +31,10 @@ function Onboarding() {
   useEffect(() => {
     (async () => {
       const [{ data: p }, { data: s }] = await Promise.all([
-        supabase.from("profiles").select("assigned_phone, forward_phone").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("forward_phone").eq("id", user.id).maybeSingle(),
         supabase.from("settings").select("ai_greeting, callback_hours_start, callback_hours_end").eq("user_id", user.id).maybeSingle(),
       ]);
-      if (p) { setPhone(p.assigned_phone); setForwardPhone(p.forward_phone || ""); }
+      if (p) { setForwardPhone(p.forward_phone || ""); }
       if (s) { setGreeting(s.ai_greeting); setStart(s.callback_hours_start); setEnd(s.callback_hours_end); }
     })();
   }, [user.id]);
@@ -83,7 +84,7 @@ function Onboarding() {
 
               <div className="rounded-xl border bg-muted/40 p-5 space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Your LeadCatch AI Number</p>
-                <p className="text-2xl font-semibold font-mono">{phone || "..."}</p>
+                <p className="text-2xl font-semibold font-mono">{RETELL_PHONE_NUMBER}</p>
                 <p className="text-xs text-muted-foreground">Forward missed calls from your business number to this LeadCatch number. Our AI will answer and collect lead info.</p>
               </div>
 

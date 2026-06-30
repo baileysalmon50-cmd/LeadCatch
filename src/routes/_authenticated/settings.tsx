@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Phone, Bell, User, CreditCard, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+const RETELL_PHONE_NUMBER = "1(754)341-1322";
+
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — LeadCatch" }] }),
   component: SettingsPage,
@@ -79,7 +81,7 @@ function SettingsPage() {
         <div className="space-y-4">
           <div className="rounded-xl bg-muted/40 border p-4">
             <p className="text-xs text-muted-foreground">Your LeadCatch AI number</p>
-            <p className="text-xl font-semibold font-mono mt-1">{profile.assigned_phone}</p>
+            <p className="text-xl font-semibold font-mono mt-1">{RETELL_PHONE_NUMBER}</p>
           </div>
           <div><Label>Your business phone</Label><Input value={profile.forward_phone || ""} onChange={(e) => setProfile({ ...profile, forward_phone: e.target.value })} placeholder="+1 555 000 1234" /></div>
           <div><Label>AI greeting</Label>
