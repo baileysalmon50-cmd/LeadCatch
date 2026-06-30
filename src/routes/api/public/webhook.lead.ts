@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 type RetellWebhookPayload = {
+  user_id?: string;
   call_id?: string;
   transcript?: string;
   recording_url?: string;
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
 
         try {
           const body = (await request.json()) as RetellWebhookPayload;
+          const userId = body.user_id || request.headers.get("x-user-id") || "default-user";
           const extracted = body.extracted_data || {};
           const notes = [
             `Call ID: ${body.call_id || "N/A"}`,
@@ -44,7 +46,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           ].join("\n");
 
           const leadData = {
-            user_id: request.headers.get("x-user-id") || "default-user",
+            user_id: userId,
             name: extracted.customer_name || body.customer_name || "Unknown caller",
             phone: extracted.customer_phone || body.customer_phone || null,
             email: extracted.customer_email || body.customer_email || null,
