@@ -16,10 +16,26 @@ type RetellWebhookPayload = {
   };
 };
 
+type PlanTier = "free" | "pro" | "business";
+
 const UUID_V4_OR_V5_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 let hasLoggedAnalysisStructure = false;
+
+function getPeriodStart(callPeriodStart?: string | null) {
+  return callPeriodStart ? new Date(callPeriodStart) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+}
+
+function getPlanLimit(plan: PlanTier) {
+  if (plan === "free") return 10;
+  if (plan === "pro") return 100;
+  return Number.POSITIVE_INFINITY;
+}
+
+function isRealLead(name: string, businessNeed: string | null) {
+  return name !== "Unknown caller" || !!businessNeed;
+}
 
 export const Route = createFileRoute("/api/public/webhook/lead")({
   server: {
@@ -81,6 +97,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           const vehicle = customAnalysisData.vehicle || null;
           const urgency = customAnalysisData.symptoms_urgency || null;
           const callSummary = call.call_analysis?.call_summary || null;
+          const realLead = isRealLead(customerName, businessNeed);
 
           const notesParts = [
             `Call ID: ${callId}`,
@@ -117,12 +134,60 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             });
           }
 
+          let locked = false;
+          let plan: PlanTier = "free";
+          let usedCount = 0;
+          let limit = Number.POSITIVE_INFINITY;
+
+          if (realLead) {
+            const { data: subscription, error: subscriptionError } = await supabaseAdmin
+              .from("subscriptions")
+              .select("plan, call_period_start")
+              .eq("user_id", userId)
+              .maybeSingle();
+
+            if (subscriptionError) {
+              console.error("Supabase subscription lookup error:", subscriptionError);
+              return new Response(JSON.stringify({ error: subscriptionError.message }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+
+            plan = (subscription?.plan as PlanTier | undefined) || "free";
+            const periodStart = getPeriodStart(
+              (subscription as { call_period_start?: string | null } | null)?.call_period_start,
+            );
+
+            const { data: countedLeads, error: countError } = await supabaseAdmin
+              .from("leads")
+              .select("name, business_need")
+              .eq("user_id", userId)
+              .eq("locked", false)
+              .gte("created_at", periodStart.toISOString());
+
+            if (countError) {
+              console.error("Supabase lead count error:", countError);
+              return new Response(JSON.stringify({ error: countError.message }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+
+            usedCount = (countedLeads || []).filter((lead) =>
+              isRealLead(lead.name || "Unknown caller", lead.business_need || null),
+            ).length;
+            limit = getPlanLimit(plan);
+            locked = usedCount >= limit;
+          }
+
           const leadData = {
             user_id: userId,
             call_id: callId,
             name: customerName,
             phone: customerPhone,
             business_need: businessNeed,
+            locked,
             notes,
             status: "new" as const,
           };
@@ -141,6 +206,30 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             return new Response(JSON.stringify({ error: error.message }), {
               status: 400,
               headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          const shouldNotify = realLead && !locked;
+
+          if (realLead) {
+            console.log(
+              locked
+                ? "Lead locked for over-limit user"
+                : "Lead inserted within plan limit",
+              {
+                user_id: userId,
+                plan,
+                used_count: usedCount,
+                limit: Number.isFinite(limit) ? limit : "unlimited",
+                locked,
+                shouldNotify,
+              },
+            );
+          } else {
+            console.log("Inserted non-real lead record without quota burn", {
+              user_id: userId,
+              locked: false,
+              shouldNotify,
             });
           }
 

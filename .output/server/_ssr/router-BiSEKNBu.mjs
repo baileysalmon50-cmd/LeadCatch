@@ -16,7 +16,7 @@ import { t as Route$12 } from "./route-Dri6_4dd.mjs";
 import { t as Route$13 } from "./settings-BYhoHAqS.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-D-v1mcQ6.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BiSEKNBu.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-DZTyTnGS.css";
@@ -211,6 +211,17 @@ var Route$2 = createFileRoute("/")({
 });
 var UUID_V4_OR_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 var hasLoggedAnalysisStructure = false;
+function getPeriodStart(callPeriodStart) {
+	return callPeriodStart ? new Date(callPeriodStart) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1);
+}
+function getPlanLimit(plan) {
+	if (plan === "free") return 10;
+	if (plan === "pro") return 100;
+	return Number.POSITIVE_INFINITY;
+}
+function isRealLead(name, businessNeed) {
+	return name !== "Unknown caller" || !!businessNeed;
+}
 var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: { POST: async ({ request }) => {
 	const url = new URL(request.url);
 	const userId = url.searchParams.get("user_id");
@@ -254,6 +265,7 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 		const vehicle = customAnalysisData.vehicle || null;
 		const urgency = customAnalysisData.symptoms_urgency || null;
 		const callSummary = call.call_analysis?.call_summary || null;
+		const realLead = isRealLead(customerName, businessNeed);
 		const notes = [
 			`Call ID: ${callId}`,
 			vehicle ? `Vehicle: ${vehicle}` : null,
@@ -279,12 +291,40 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 			status: 200,
 			headers: { "Content-Type": "application/json" }
 		});
+		let locked = false;
+		let plan = "free";
+		let usedCount = 0;
+		let limit = Number.POSITIVE_INFINITY;
+		if (realLead) {
+			const { data: subscription, error: subscriptionError } = await supabaseAdmin.from("subscriptions").select("plan, call_period_start").eq("user_id", userId).maybeSingle();
+			if (subscriptionError) {
+				console.error("Supabase subscription lookup error:", subscriptionError);
+				return new Response(JSON.stringify({ error: subscriptionError.message }), {
+					status: 400,
+					headers: { "Content-Type": "application/json" }
+				});
+			}
+			plan = subscription?.plan || "free";
+			const periodStart = getPeriodStart(subscription?.call_period_start);
+			const { data: countedLeads, error: countError } = await supabaseAdmin.from("leads").select("name, business_need").eq("user_id", userId).eq("locked", false).gte("created_at", periodStart.toISOString());
+			if (countError) {
+				console.error("Supabase lead count error:", countError);
+				return new Response(JSON.stringify({ error: countError.message }), {
+					status: 400,
+					headers: { "Content-Type": "application/json" }
+				});
+			}
+			usedCount = (countedLeads || []).filter((lead) => isRealLead(lead.name || "Unknown caller", lead.business_need || null)).length;
+			limit = getPlanLimit(plan);
+			locked = usedCount >= limit;
+		}
 		const leadData = {
 			user_id: userId,
 			call_id: callId,
 			name: customerName,
 			phone: customerPhone,
 			business_need: businessNeed,
+			locked,
 			notes,
 			status: "new"
 		};
@@ -303,6 +343,20 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 				headers: { "Content-Type": "application/json" }
 			});
 		}
+		const shouldNotify = realLead && !locked;
+		if (realLead) console.log(locked ? "Lead locked for over-limit user" : "Lead inserted within plan limit", {
+			user_id: userId,
+			plan,
+			used_count: usedCount,
+			limit: Number.isFinite(limit) ? limit : "unlimited",
+			locked,
+			shouldNotify
+		});
+		else console.log("Inserted non-real lead record without quota burn", {
+			user_id: userId,
+			locked: false,
+			shouldNotify
+		});
 		return new Response(JSON.stringify({
 			success: true,
 			lead_id: callId
