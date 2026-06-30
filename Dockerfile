@@ -1,20 +1,18 @@
 FROM node:22-slim
-
 WORKDIR /app
 
-# Install dependencies (use the lockfile for reproducibility)
+# Install only runtime dependencies (build is already done locally)
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --omit=dev
 
-# Copy source and build
+# Copy everything, including the pre-built .output committed to the repo
 COPY . .
-RUN npm run build
 
-# Verify the build actually produced the server entry — fail loudly if not
-RUN test -f .output/server/index.mjs || (echo "BUILD DID NOT PRODUCE .output/server/index.mjs" && ls -la .output/server/ && exit 1)
+# Sanity check: the committed build output must be present
+RUN test -f .output/server/index.mjs || (echo "MISSING .output/server/index.mjs — run npm run build locally and commit .output" && exit 1)
 
-# Railway provides PORT at runtime; Nitro's node server reads it
 ENV PORT=8080
+ENV HOST=0.0.0.0
 EXPOSE 8080
 
 CMD ["node", ".output/server/index.mjs"]
