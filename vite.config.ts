@@ -15,5 +15,11 @@ export default defineConfig({
   nitro: {
     // Override default Cloudflare preset for Node.js/Railway deployment
     preset: "node-server",
+    // Disable dependency file-tracing (nf3/@vercel/nft) — it has an ESM/CJS
+    // import bug in this Nitro beta and isn't needed in a container that ships
+    // full node_modules. This is what was crashing the build.
+    externals: {
+      trace: false,
+    },
   },
 });
