@@ -16,7 +16,7 @@ import { t as Route$12 } from "./route-Dri6_4dd.mjs";
 import { t as Route$13 } from "./settings-BYhoHAqS.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BiSEKNBu.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-eZT0aG6o.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-DZTyTnGS.css";
@@ -211,9 +211,6 @@ var Route$2 = createFileRoute("/")({
 });
 var UUID_V4_OR_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 var hasLoggedAnalysisStructure = false;
-function getPeriodStart(callPeriodStart) {
-	return callPeriodStart ? new Date(callPeriodStart) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1);
-}
 function getPlanLimit(plan) {
 	if (plan === "free") return 10;
 	if (plan === "pro") return 100;
@@ -296,7 +293,7 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 		let usedCount = 0;
 		let limit = Number.POSITIVE_INFINITY;
 		if (realLead) {
-			const { data: subscription, error: subscriptionError } = await supabaseAdmin.from("subscriptions").select("plan, call_period_start").eq("user_id", userId).maybeSingle();
+			const { data: subscription, error: subscriptionError } = await supabaseAdmin.from("subscriptions").select("plan").eq("user_id", userId).maybeSingle();
 			if (subscriptionError) {
 				console.error("Supabase subscription lookup error:", subscriptionError);
 				return new Response(JSON.stringify({ error: subscriptionError.message }), {
@@ -305,7 +302,8 @@ var Route$1 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 				});
 			}
 			plan = subscription?.plan || "free";
-			const periodStart = getPeriodStart(subscription?.call_period_start);
+			const now = /* @__PURE__ */ new Date();
+			const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 			const { data: countedLeads, error: countError } = await supabaseAdmin.from("leads").select("name, business_need").eq("user_id", userId).eq("locked", false).gte("created_at", periodStart.toISOString());
 			if (countError) {
 				console.error("Supabase lead count error:", countError);

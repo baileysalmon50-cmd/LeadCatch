@@ -23,10 +23,6 @@ const UUID_V4_OR_V5_REGEX =
 
 let hasLoggedAnalysisStructure = false;
 
-function getPeriodStart(callPeriodStart?: string | null) {
-  return callPeriodStart ? new Date(callPeriodStart) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-}
-
 function getPlanLimit(plan: PlanTier) {
   if (plan === "free") return 10;
   if (plan === "pro") return 100;
@@ -142,7 +138,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           if (realLead) {
             const { data: subscription, error: subscriptionError } = await supabaseAdmin
               .from("subscriptions")
-              .select("plan, call_period_start")
+              .select("plan")
               .eq("user_id", userId)
               .maybeSingle();
 
@@ -155,9 +151,8 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             }
 
             plan = (subscription?.plan as PlanTier | undefined) || "free";
-            const periodStart = getPeriodStart(
-              (subscription as { call_period_start?: string | null } | null)?.call_period_start,
-            );
+            const now = new Date();
+            const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
             const { data: countedLeads, error: countError } = await supabaseAdmin
               .from("leads")
