@@ -296,22 +296,49 @@ export type Database = {
       subscriptions: {
         Row: {
           billing_date: string | null
+          call_period_start: string | null
+          cancel_at_period_end: boolean
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
+          price_id: string | null
+          product_id: string | null
+          status: string | null
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           billing_date?: string | null
+          call_period_start?: string | null
+          cancel_at_period_end?: boolean
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
+          price_id?: string | null
+          product_id?: string | null
+          status?: string | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           billing_date?: string | null
+          call_period_start?: string | null
+          cancel_at_period_end?: boolean
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
+          price_id?: string | null
+          product_id?: string | null
+          status?: string | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
           user_id?: string
         }

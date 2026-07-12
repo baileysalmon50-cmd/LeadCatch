@@ -40,9 +40,13 @@ function LeadsPage() {
 
   useEffect(() => {
     supabase.from("subscriptions").select("plan, call_period_start").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to load subscription plan info", error);
+          toast.warning("Plan information could not be loaded. Using fallback limits.");
+        }
         if (data?.plan) setPlan(data.plan as string);
-        const cps = (data as { call_period_start?: string } | null)?.call_period_start;
+        const cps = data?.call_period_start;
         setPeriodStart(cps ? new Date(cps) : new Date(new Date().getFullYear(), new Date().getMonth(), 1));
       });
     supabase.from("leads").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
