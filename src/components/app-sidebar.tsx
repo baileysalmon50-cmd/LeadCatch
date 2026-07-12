@@ -1,11 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  BarChart3,
+  CalendarDays,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { Logo } from "./logo";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leads",     label: "Leads",     icon: Users },
+  { to: "/appointments", label: "Appointments", icon: CalendarDays },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/settings",  label: "Settings",  icon: SettingsIcon },
 ];

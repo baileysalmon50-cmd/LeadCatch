@@ -1,6 +1,6 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "./@floating-ui/react-dom+[...].mjs";
-import { M as createSlot, N as useComposedRefs, P as require_jsx_runtime, k as createContextScope } from "./@radix-ui/react-alert-dialog+[...].mjs";
+import { A as createContextScope, M as createSlot, N as useComposedRefs, P as require_jsx_runtime } from "./@radix-ui/react-alert-dialog+[...].mjs";
 //#region node_modules/@radix-ui/react-collection/dist/index.mjs
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var import_jsx_runtime = require_jsx_runtime();

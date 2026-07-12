@@ -1,5 +1,5 @@
 import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
-import { p as PhoneIncoming } from "../_libs/lucide-react.mjs";
+import { m as PhoneIncoming } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/logo-2UeFUhWv.js
 var import_jsx_runtime = require_jsx_runtime();
 function Logo({ size = "md" }) {

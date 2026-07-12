@@ -6,9 +6,9 @@ import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+
 import { r as cn, t as Button } from "./button-CCQEfgNs.mjs";
 import { t as Card } from "./card-Bav9nr75.mjs";
 import { n as EmbeddedCheckoutProvider, t as EmbeddedCheckout } from "../_libs/@stripe/react-stripe-js+[...].mjs";
-import { T as Check } from "../_libs/lucide-react.mjs";
-import { t as Logo } from "./logo-2UeFUhWv.mjs";
+import { k as Check } from "../_libs/lucide-react.mjs";
 import { a as DialogHeader, n as DialogContent, o as DialogTitle, t as Dialog } from "./dialog-DYBpJUt2.mjs";
+import { t as Logo } from "./logo-2UeFUhWv.mjs";
 import { t as createCheckoutSession } from "./payments.functions-xdEWfXRb.mjs";
 import { n as getStripeEnvironment, t as getStripe } from "./stripe-CBIZNDhx.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/pricing-CIEWcVoZ.js

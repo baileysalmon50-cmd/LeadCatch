@@ -6,8 +6,8 @@ import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+
 import { t as Button } from "./button-CCQEfgNs.mjs";
 import { t as Card } from "./card-Bav9nr75.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-import { t as Route } from "./auth-CyVGWgkH.mjs";
 import { n as Label, t as Input } from "./label-D2fwATjQ.mjs";
+import { t as Route } from "./auth-CyVGWgkH.mjs";
 import { t as Logo } from "./logo-2UeFUhWv.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/auth-Bwi-FS4z.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
