@@ -134,6 +134,9 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
           return Response.json({ received: true });
         } catch (e) {
           console.error("Webhook error:", e);
+          if (e instanceof Error && e.message === "Invalid webhook signature") {
+            return new Response("Invalid webhook signature", { status: 400 });
+          }
           return new Response("Webhook error", { status: 400 });
         }
       },
