@@ -26,10 +26,12 @@ async function sendEmail(kind: "welcome" | "winback", userId: string, plan: stri
   console.log(`[email] ${kind} → user=${userId} plan=${plan}`);
 }
 
-async function upsertSubscription(subscription: any, env: StripeEnv, opts: { resetCallPeriod?: boolean } = {}) {
+async function upsertSubscription(subscription: any, env: StripeEnv) {
   const userId = subscription.metadata?.userId;
   if (!userId) {
-    console.error("No userId in subscription metadata");
+    console.error("Skipping subscription upsert: missing metadata.userId", {
+      subscriptionId: subscription.id,
+    });
     return;
   }
   const item = subscription.items?.data?.[0];
@@ -53,10 +55,10 @@ async function upsertSubscription(subscription: any, env: StripeEnv, opts: { res
       billing_date: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end ?? false,
       environment: env,
-      ...(opts.resetCallPeriod && { call_period_start: new Date().toISOString() }),
+      call_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "stripe_subscription_id" },
+    { onConflict: "user_id" },
   );
 
   return { userId, plan };
@@ -67,7 +69,7 @@ async function handleWebhook(req: Request, env: StripeEnv) {
 
   switch (event.type) {
     case "customer.subscription.created": {
-      const res = await upsertSubscription(event.data.object, env, { resetCallPeriod: true });
+      const res = await upsertSubscription(event.data.object, env);
       if (res) await sendEmail("welcome", res.userId, res.plan);
       break;
     }
