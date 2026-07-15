@@ -17,7 +17,7 @@ import { t as Route$13 } from "./route-vByyeg4n.mjs";
 import { t as Route$14 } from "./settings-Bvq3GsrS.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BHvC2zbB.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DmPeJdQR.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-BkUBqPNS.css";
@@ -385,10 +385,10 @@ function resolvePriceId(price) {
 async function sendEmail(kind, userId, plan) {
 	console.log(`[email] ${kind} → user=${userId} plan=${plan}`);
 }
-async function upsertSubscription(subscription, env, opts = {}) {
+async function upsertSubscription(subscription, env) {
 	const userId = subscription.metadata?.userId;
 	if (!userId) {
-		console.error("No userId in subscription metadata");
+		console.error("Skipping subscription upsert: missing metadata.userId", { subscriptionId: subscription.id });
 		return;
 	}
 	const item = subscription.items?.data?.[0];
@@ -397,7 +397,7 @@ async function upsertSubscription(subscription, env, opts = {}) {
 	const periodStart = item?.current_period_start ?? subscription.current_period_start;
 	const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 	const plan = priceIdToPlan(priceId);
-	await getSupabase().from("subscriptions").upsert({
+	const { error } = await getSupabase().from("subscriptions").upsert({
 		user_id: userId,
 		stripe_subscription_id: subscription.id,
 		stripe_customer_id: subscription.customer,
@@ -410,9 +410,17 @@ async function upsertSubscription(subscription, env, opts = {}) {
 		billing_date: periodEnd ? (/* @__PURE__ */ new Date(periodEnd * 1e3)).toISOString() : null,
 		cancel_at_period_end: subscription.cancel_at_period_end ?? false,
 		environment: env,
-		...opts.resetCallPeriod && { call_period_start: (/* @__PURE__ */ new Date()).toISOString() },
+		call_period_start: periodStart ? (/* @__PURE__ */ new Date(periodStart * 1e3)).toISOString() : null,
 		updated_at: (/* @__PURE__ */ new Date()).toISOString()
-	}, { onConflict: "stripe_subscription_id" });
+	}, { onConflict: "user_id" });
+	if (error) {
+		console.error("Subscription upsert failed", {
+			userId,
+			subscriptionId: subscription.id,
+			error
+		});
+		throw new Error("Subscription upsert failed: " + error.message);
+	}
 	return {
 		userId,
 		plan
@@ -422,7 +430,7 @@ async function handleWebhook(req, env) {
 	const event = await verifyWebhook(req, env);
 	switch (event.type) {
 		case "customer.subscription.created": {
-			const res = await upsertSubscription(event.data.object, env, { resetCallPeriod: true });
+			const res = await upsertSubscription(event.data.object, env);
 			if (res) await sendEmail("welcome", res.userId, res.plan);
 			break;
 		}
@@ -433,14 +441,25 @@ async function handleWebhook(req, env) {
 			break;
 		}
 		case "customer.subscription.deleted": {
-			const userId = event.data.object.metadata?.userId;
-			if (userId) await getSupabase().from("subscriptions").update({
-				status: "canceled",
-				plan: "free",
-				cancel_at_period_end: false,
-				updated_at: (/* @__PURE__ */ new Date()).toISOString(),
-				call_period_start: (/* @__PURE__ */ new Date()).toISOString()
-			}).eq("user_id", userId).eq("environment", env);
+			const sub = event.data.object;
+			const userId = sub.metadata?.userId;
+			if (userId) {
+				const { error } = await getSupabase().from("subscriptions").update({
+					status: "canceled",
+					plan: "free",
+					cancel_at_period_end: false,
+					updated_at: (/* @__PURE__ */ new Date()).toISOString(),
+					call_period_start: (/* @__PURE__ */ new Date()).toISOString()
+				}).eq("user_id", userId).eq("environment", env);
+				if (error) {
+					console.error("Subscription upsert failed", {
+						userId,
+						subscriptionId: sub.id,
+						error
+					});
+					throw new Error("Subscription upsert failed: " + error.message);
+				}
+			}
 			break;
 		}
 		case "invoice.paid": {

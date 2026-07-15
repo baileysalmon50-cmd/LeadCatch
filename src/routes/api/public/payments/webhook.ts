@@ -41,7 +41,7 @@ async function upsertSubscription(subscription: any, env: StripeEnv) {
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
   const plan = priceIdToPlan(priceId);
 
-  await getSupabase().from("subscriptions").upsert(
+  const { error } = await getSupabase().from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_subscription_id: subscription.id,
@@ -60,6 +60,15 @@ async function upsertSubscription(subscription: any, env: StripeEnv) {
     },
     { onConflict: "user_id" },
   );
+
+  if (error) {
+    console.error("Subscription upsert failed", {
+      userId,
+      subscriptionId: subscription.id,
+      error,
+    });
+    throw new Error("Subscription upsert failed: " + error.message);
+  }
 
   return { userId, plan };
 }
@@ -87,7 +96,7 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       const sub = event.data.object;
       const userId = sub.metadata?.userId;
       if (userId) {
-        await getSupabase()
+        const { error } = await getSupabase()
           .from("subscriptions")
           .update({
             status: "canceled",
@@ -98,6 +107,15 @@ async function handleWebhook(req: Request, env: StripeEnv) {
           })
           .eq("user_id", userId)
           .eq("environment", env);
+
+        if (error) {
+          console.error("Subscription upsert failed", {
+            userId,
+            subscriptionId: sub.id,
+            error,
+          });
+          throw new Error("Subscription upsert failed: " + error.message);
+        }
       }
       break;
     }
