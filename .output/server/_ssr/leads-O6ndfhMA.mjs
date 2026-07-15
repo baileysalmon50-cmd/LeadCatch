@@ -11,8 +11,8 @@ import { t as Input } from "./label-D2fwATjQ.mjs";
 import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DYjyjhZD.mjs";
 import { t as AddLeadDialog } from "./add-lead-dialog-CgdMOrhc.mjs";
-import { t as Route } from "./leads-CwuafkoV.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/leads-sbSMAL52.js
+import { t as Route } from "./leads-CQLRfgoe.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/leads-O6ndfhMA.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var AlertDialog = Root2;
@@ -78,7 +78,11 @@ function LeadsPage() {
 	const [plan, setPlan] = (0, import_react.useState)("free");
 	const [periodStart, setPeriodStart] = (0, import_react.useState)(null);
 	(0, import_react.useEffect)(() => {
-		supabase.from("subscriptions").select("plan, call_period_start").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+		supabase.from("subscriptions").select("plan, call_period_start").eq("user_id", user.id).maybeSingle().then(({ data, error }) => {
+			if (error) {
+				console.error("Failed to load subscription plan info", error);
+				toast.warning("Plan information could not be loaded. Using fallback limits.");
+			}
 			if (data?.plan) setPlan(data.plan);
 			const cps = data?.call_period_start;
 			setPeriodStart(cps ? new Date(cps) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1));

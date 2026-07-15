@@ -9,9 +9,9 @@ import { n as EmbeddedCheckoutProvider, t as EmbeddedCheckout } from "../_libs/@
 import { k as Check } from "../_libs/lucide-react.mjs";
 import { a as DialogHeader, n as DialogContent, o as DialogTitle, t as Dialog } from "./dialog-DYBpJUt2.mjs";
 import { t as Logo } from "./logo-2UeFUhWv.mjs";
-import { t as createCheckoutSession } from "./payments.functions-xdEWfXRb.mjs";
-import { n as getStripeEnvironment, t as getStripe } from "./stripe-CBIZNDhx.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/pricing-CIEWcVoZ.js
+import { t as createCheckoutSession } from "./payments.functions-CZZZ6ntK.mjs";
+import { n as getStripeEnvironment, t as getStripe } from "./stripe-CZDQChTZ.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/pricing-ULLzZF5E.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function StripeEmbeddedCheckout({ priceId, returnUrl }) {
@@ -65,11 +65,23 @@ function useStripeCheckout() {
 		}) : null
 	};
 }
+var clientToken = "pk_test_51TjjUUAuq8vUQEP1Wh9BfLhImBvNvw3Nqgyzo7Rk63N4ap1Htuq6SooPyQfi3iEJze216dkb30Zcb1Wf52En4hBA00nxL62t2Q";
 function PaymentTestModeBanner() {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		className: "w-full bg-red-100 border-b border-red-300 px-4 py-2 text-center text-sm text-red-800",
-		children: "Production checkout is not configured. Complete Stripe go-live in your Lovable project to accept real payments."
+	if (clientToken.startsWith("pk_test_")) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "w-full bg-orange-100 border-b border-orange-300 px-4 py-2 text-center text-sm text-orange-800",
+		children: [
+			"All payments made in the preview are in test mode.",
+			" ",
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+				href: "https://docs.lovable.dev/features/payments#test-and-live-environments",
+				target: "_blank",
+				rel: "noopener noreferrer",
+				className: "underline font-medium",
+				children: "Read more"
+			})
+		]
 	});
+	return null;
 }
 var PLANS = [
 	{

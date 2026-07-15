@@ -10,9 +10,9 @@ import { F as Sparkles, N as Bell, S as CreditCard, a as User, f as Phone, j as 
 import { n as Label, t as Input } from "./label-D2fwATjQ.mjs";
 import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DYjyjhZD.mjs";
-import { t as Route } from "./settings-BNJ-sTl1.mjs";
+import { t as Route } from "./settings-Bvq3GsrS.mjs";
 import { n as SwitchThumb, t as Switch$1 } from "../_libs/radix-ui__react-switch.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/settings-D2awrxup.js
+//#region node_modules/.nitro/vite/services/ssr/assets/settings-CX7xxYa8.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var Switch = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Switch$1, {
@@ -581,8 +581,8 @@ function BillingCard({ plan, billingDate }) {
 	async function openPortal() {
 		setLoading(true);
 		try {
-			const { createPortalSession } = await import("./payments.functions-xdEWfXRb.mjs").then((n) => n.n);
-			const { getStripeEnvironment } = await import("./stripe-CBIZNDhx.mjs").then((n) => n.r);
+			const { createPortalSession } = await import("./payments.functions-CZZZ6ntK.mjs").then((n) => n.n);
+			const { getStripeEnvironment } = await import("./stripe-CZDQChTZ.mjs").then((n) => n.r);
 			const res = await createPortalSession({ data: {
 				environment: getStripeEnvironment(),
 				returnUrl: window.location.href

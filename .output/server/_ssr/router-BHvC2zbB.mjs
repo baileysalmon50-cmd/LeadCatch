@@ -10,14 +10,14 @@ import { t as Route$7 } from "./appointments-CfC64IDS.mjs";
 import { t as Route$8 } from "./auth-CyVGWgkH.mjs";
 import { t as Route$9 } from "./checkout.return-Bp3a7qiW.mjs";
 import { t as Route$10 } from "./dashboard-s-_9Ou71.mjs";
-import { t as Route$11 } from "./leads-CwuafkoV.mjs";
+import { t as Route$11 } from "./leads-CQLRfgoe.mjs";
 import { t as Route$12 } from "./onboarding-CPSwg1Va.mjs";
-import { r as verifyWebhook } from "./stripe.server-CZmSH6zg.mjs";
+import { r as verifyWebhook } from "./stripe.server-D6VjEd18.mjs";
 import { t as Route$13 } from "./route-vByyeg4n.mjs";
-import { t as Route$14 } from "./settings-BNJ-sTl1.mjs";
+import { t as Route$14 } from "./settings-Bvq3GsrS.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-D71lVF99.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BHvC2zbB.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-BkUBqPNS.css";
@@ -194,7 +194,7 @@ var Route$4 = createFileRoute("/reset-password")({
 	head: () => ({ meta: [{ title: "Reset password — LeadCatch" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./pricing-CIEWcVoZ.mjs");
+var $$splitComponentImporter$1 = () => import("./pricing-ULLzZF5E.mjs");
 var Route$3 = createFileRoute("/pricing")({
 	head: () => ({ meta: [{ title: "Pricing — LeadCatch" }, {
 		name: "description",
@@ -468,6 +468,7 @@ var Route = createFileRoute("/api/public/payments/webhook")({ server: { handlers
 		return Response.json({ received: true });
 	} catch (e) {
 		console.error("Webhook error:", e);
+		if (e instanceof Error && e.message === "Invalid webhook signature") return new Response("Invalid webhook signature", { status: 400 });
 		return new Response("Webhook error", { status: 400 });
 	}
 } } } });

@@ -5,7 +5,7 @@ import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+
 import { n as createMemoryHistory } from "../_libs/tanstack__history.mjs";
 import { d as su, i as mergeHeaders, l as Pu, n as getNormalizedURL, o as createRawStreamRPCPlugin, r as getOrigin, s as createSerializationAdapter, t as attachRouterServerSsrUtils, u as iu } from "../_libs/@tanstack/router-core+[...].mjs";
 import { _ as safeObjectMerge, a as X_TSS_RAW_RESPONSE, c as createNullProtoObject, d as getDefaultSerovalPlugins, g as runWithStartContext, h as requestHandler, i as TSS_SERVER_FUNCTION, m as getStartContext, n as TSS_CONTENT_TYPE_FRAMED_VERSIONED, o as X_TSS_SERIALIZED, p as getResponse, r as TSS_FORMDATA_CONTEXT, s as createCsrfMiddleware, t as FrameType, u as flattenMiddlewares } from "./esm-9EjmF9OT.mjs";
-import { t as getServerFnById } from "../__23tanstack-start-server-fn-resolver-C9_6aGHF.mjs";
+import { t as getServerFnById } from "../__23tanstack-start-server-fn-resolver-BOeknU_Y.mjs";
 require_react();
 var import_jsx_runtime = require_jsx_runtime();
 function StartServer(props) {
@@ -27,7 +27,7 @@ var defaultStreamHandler = defineHandlerCallback(({ request, router, responseHea
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-CUd2nz14.mjs");
+	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-C48kw97q.mjs");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -968,7 +968,7 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-		import("./router-D71lVF99.mjs"),
+		import("./router-BHvC2zbB.mjs"),
 		import("./start-CK4QIWfS.mjs"),
 		import("./empty-plugin-adapters-D9UWiqvJ.mjs")
 	]);
