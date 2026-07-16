@@ -17,7 +17,7 @@ import { t as Route$14 } from "./route-teEVkAjr.mjs";
 import { t as Route$15 } from "./settings-6-yHDII5.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-B4QltHFi.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BVlDpOR0.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-NJwDYgN9.css";
@@ -596,6 +596,21 @@ async function upsertSubscription(subscription, env) {
 			error
 		});
 		throw new Error("Subscription upsert failed: " + error.message);
+	}
+	if (plan === "pro" || plan === "business") {
+		const { error: unlockError, count: unlockedCount } = await getSupabase().from("leads").update({ locked: false }).eq("user_id", userId).eq("locked", true).select("id", {
+			count: "exact",
+			head: true
+		});
+		if (unlockError) console.error("FAILED TO UNLOCK RANSOMED LEADS AFTER SUBSCRIPTION UPSERT", {
+			userId,
+			subscriptionId: subscription.id,
+			error: unlockError
+		});
+		else if (typeof unlockedCount === "number") console.log("Unlocked ransomed leads after paid plan upsert", {
+			userId,
+			unlockedCount
+		});
 	}
 	return {
 		userId,

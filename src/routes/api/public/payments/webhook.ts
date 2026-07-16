@@ -70,6 +70,29 @@ async function upsertSubscription(subscription: any, env: StripeEnv) {
     throw new Error("Subscription upsert failed: " + error.message);
   }
 
+  if (plan === "pro" || plan === "business") {
+    const supabaseAdmin = getSupabase();
+    const { error: unlockError, count: unlockedCount } = await supabaseAdmin
+      .from("leads")
+      .update({ locked: false })
+      .eq("user_id", userId)
+      .eq("locked", true)
+      .select("id", { count: "exact", head: true });
+
+    if (unlockError) {
+      console.error("FAILED TO UNLOCK RANSOMED LEADS AFTER SUBSCRIPTION UPSERT", {
+        userId,
+        subscriptionId: subscription.id,
+        error: unlockError,
+      });
+    } else if (typeof unlockedCount === "number") {
+      console.log("Unlocked ransomed leads after paid plan upsert", {
+        userId,
+        unlockedCount,
+      });
+    }
+  }
+
   return { userId, plan };
 }
 
