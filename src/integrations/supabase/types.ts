@@ -187,35 +187,38 @@ export type Database = {
       }
       profiles: {
         Row: {
-          assigned_phone: string
+          assigned_phone: string | null
           business_name: string
           created_at: string
           email: string
           forward_phone: string | null
           id: string
           onboarded: boolean
+          retell_phone_id: string | null
           timezone: string
           updated_at: string
         }
         Insert: {
-          assigned_phone: string
+          assigned_phone?: string | null
           business_name?: string
           created_at?: string
           email: string
           forward_phone?: string | null
           id: string
           onboarded?: boolean
+          retell_phone_id?: string | null
           timezone?: string
           updated_at?: string
         }
         Update: {
-          assigned_phone?: string
+          assigned_phone?: string | null
           business_name?: string
           created_at?: string
           email?: string
           forward_phone?: string | null
           id?: string
           onboarded?: boolean
+          retell_phone_id?: string | null
           timezone?: string
           updated_at?: string
         }

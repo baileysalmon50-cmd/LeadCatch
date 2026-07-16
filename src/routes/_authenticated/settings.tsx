@@ -26,8 +26,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const RETELL_PHONE_NUMBER = "1(754)341-1322";
-
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — LeadCatch" }] }),
   component: SettingsPage,
@@ -37,8 +35,9 @@ type Profile = {
   id: string;
   email: string;
   business_name: string;
-  assigned_phone: string;
+  assigned_phone: string | null;
   forward_phone: string | null;
+  retell_phone_id: string | null;
   timezone: string;
 };
 type Settings = {
@@ -265,9 +264,20 @@ function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               Your LeadCatch AI number
             </p>
-            <p className="text-xl font-semibold font-mono mt-1">
-              {RETELL_PHONE_NUMBER}
-            </p>
+            {profile.assigned_phone ? (
+              <p className="text-xl font-semibold font-mono mt-1">
+                {profile.assigned_phone}
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your LeadCatch number will be assigned during setup
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Complete setup in <Link to="/onboarding" className="text-brand hover:underline">onboarding</Link> to get your number.
+                </p>
+              </>
+            )}
           </div>
           <div>
             <Label>Your business phone</Label>

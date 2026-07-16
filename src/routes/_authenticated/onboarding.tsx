@@ -10,8 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Logo } from "@/components/logo";
 import { Phone, MessageSquare, Clock, ArrowRight, Check, Info, ChevronDown, Smartphone, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-
-const RETELL_PHONE_NUMBER = "1(754)341-1322";
+import { provisionPhoneNumber } from "@/utils/phone.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
@@ -22,6 +21,9 @@ function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [forwardPhone, setForwardPhone] = useState(""); // their business number
+  const [assignedPhone, setAssignedPhone] = useState<string | null>(null);
+  const [areaCode, setAreaCode] = useState("");
+  const [provisioning, setProvisioning] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("18:00");
@@ -31,10 +33,22 @@ function Onboarding() {
   useEffect(() => {
     (async () => {
       const [{ data: p }, { data: s }] = await Promise.all([
-        supabase.from("profiles").select("forward_phone").eq("id", user.id).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("forward_phone, assigned_phone")
+          .eq("id", user.id)
+          .maybeSingle(),
         supabase.from("settings").select("ai_greeting, callback_hours_start, callback_hours_end").eq("user_id", user.id).maybeSingle(),
       ]);
-      if (p) { setForwardPhone(p.forward_phone || ""); }
+      if (p) {
+        setForwardPhone(p.forward_phone || "");
+        setAssignedPhone(p.assigned_phone || null);
+        const digits = (p.forward_phone || "").replace(/\D/g, "");
+        const normalized = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+        if (normalized.length >= 3) {
+          setAreaCode(normalized.slice(0, 3));
+        }
+      }
       if (s) { setGreeting(s.ai_greeting); setStart(s.callback_hours_start); setEnd(s.callback_hours_end); }
     })();
   }, [user.id]);
@@ -46,6 +60,30 @@ function Onboarding() {
     setSaving(false);
     toast.success("You're all set! Welcome to LeadCatch.");
     navigate({ to: "/dashboard" });
+  }
+
+  async function handleProvisionNumber() {
+    if (!/^\d{3}$/.test(areaCode)) {
+      toast.error("Enter a valid 3-digit area code");
+      return;
+    }
+
+    setProvisioning(true);
+    try {
+      const result = await provisionPhoneNumber({
+        data: { areaCode },
+      });
+      setAssignedPhone(result.phone);
+      toast.success(
+        result.alreadyProvisioned
+          ? `You already have a number: ${result.phone}`
+          : `Your LeadCatch number is ready: ${result.phone}`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not provision a number");
+    } finally {
+      setProvisioning(false);
+    }
   }
 
   return (
@@ -84,7 +122,36 @@ function Onboarding() {
 
               <div className="rounded-xl border bg-muted/40 p-5 space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Your LeadCatch AI Number</p>
-                <p className="text-2xl font-semibold font-mono">{RETELL_PHONE_NUMBER}</p>
+                {assignedPhone ? (
+                  <p className="text-2xl font-semibold font-mono">{assignedPhone}</p>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Your LeadCatch number will be assigned during setup</p>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                      <div className="space-y-1">
+                        <Label htmlFor="area-code">Preferred area code</Label>
+                        <Input
+                          id="area-code"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={3}
+                          value={areaCode}
+                          onChange={(e) => setAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                          placeholder="754"
+                          className="w-28"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleProvisionNumber}
+                        disabled={provisioning}
+                      >
+                        {provisioning ? "Getting number..." : "Get my number"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">Forward missed calls from your business number to this LeadCatch number. Our AI will answer and collect lead info.</p>
               </div>
 

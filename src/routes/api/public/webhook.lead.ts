@@ -33,6 +33,26 @@ function isRealLead(name: string, businessNeed: string | null) {
   return name !== "Unknown caller" || !!businessNeed;
 }
 
+function normalizeDialedNumber(rawToNumber?: string): string | null {
+  if (!rawToNumber) return null;
+  const trimmed = rawToNumber.trim();
+  if (!trimmed) return null;
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return null;
+
+  if (trimmed.startsWith("+")) {
+    return `+${digits}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+${digits}`;
+  }
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+  return `+${digits}`;
+}
+
 export const Route = createFileRoute("/api/public/webhook/lead")({
   server: {
     handlers: {
@@ -108,6 +128,35 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           const notes = notesParts.join("\n\n");
 
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+          const normalizedToNumber = normalizeDialedNumber(call.to_number);
+          let resolvedUserId = userId;
+          if (normalizedToNumber) {
+            const { data: profileMatches, error: profileLookupError } = await supabaseAdmin
+              .from("profiles")
+              .select("id")
+              .eq("retell_phone_id", normalizedToNumber)
+              .limit(2);
+
+            if (profileLookupError) {
+              console.error("Supabase profile lookup error:", profileLookupError);
+              return new Response(JSON.stringify({ error: profileLookupError.message }), {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+
+            if ((profileMatches || []).length === 1) {
+              resolvedUserId = profileMatches![0].id;
+            } else {
+              console.error("[webhook.lead] Unmatched to_number; falling back to query user_id", {
+                to_number: call.to_number,
+                normalized_to_number: normalizedToNumber,
+                matches: (profileMatches || []).length,
+              });
+            }
+          }
+
           const { data: existingLead, error: selectError } = await supabaseAdmin
             .from("leads")
             .select("id")
@@ -139,7 +188,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             const { data: subscription, error: subscriptionError } = await supabaseAdmin
               .from("subscriptions")
               .select("plan")
-              .eq("user_id", userId)
+              .eq("user_id", resolvedUserId)
               .maybeSingle();
 
             if (subscriptionError) {
@@ -157,7 +206,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             const { data: countedLeads, error: countError } = await supabaseAdmin
               .from("leads")
               .select("name, business_need")
-              .eq("user_id", userId)
+              .eq("user_id", resolvedUserId)
               .eq("locked", false)
               .gte("created_at", periodStart.toISOString());
 
@@ -177,7 +226,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           }
 
           const leadData = {
-            user_id: userId,
+            user_id: resolvedUserId,
             call_id: callId,
             name: customerName,
             phone: customerPhone,
@@ -212,7 +261,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
                 ? "Lead locked for over-limit user"
                 : "Lead inserted within plan limit",
               {
-                user_id: userId,
+                user_id: resolvedUserId,
                 plan,
                 used_count: usedCount,
                 limit: Number.isFinite(limit) ? limit : "unlimited",
@@ -222,7 +271,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             );
           } else {
             console.log("Inserted non-real lead record without quota burn", {
-              user_id: userId,
+              user_id: resolvedUserId,
               locked: false,
               shouldNotify,
             });
