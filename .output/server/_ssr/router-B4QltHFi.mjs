@@ -17,7 +17,7 @@ import { t as Route$14 } from "./route-teEVkAjr.mjs";
 import { t as Route$15 } from "./settings-6-yHDII5.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-K2piUrBx.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-B4QltHFi.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-NJwDYgN9.css";
@@ -341,6 +341,7 @@ var Route$2 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 		let plan = "free";
 		let usedCount = 0;
 		let limit = Number.POSITIVE_INFINITY;
+		let periodStart = new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1);
 		if (realLead) {
 			const { data: subscription, error: subscriptionError } = await supabaseAdmin.from("subscriptions").select("plan, call_period_start").eq("user_id", resolvedUserId).maybeSingle();
 			if (subscriptionError) {
@@ -352,7 +353,7 @@ var Route$2 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 			}
 			plan = subscription?.plan || "free";
 			const callPeriodStart = subscription?.call_period_start;
-			const periodStart = callPeriodStart ? new Date(callPeriodStart) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1);
+			periodStart = callPeriodStart ? new Date(callPeriodStart) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1);
 			const { data: countedLeads, error: countError } = await supabaseAdmin.from("leads").select("name, business_need").eq("user_id", resolvedUserId).eq("locked", false).gte("created_at", periodStart.toISOString());
 			if (countError) {
 				console.error("Supabase lead count error:", countError);
@@ -375,6 +376,14 @@ var Route$2 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 			notes,
 			status: "new"
 		};
+		console.log("Cap decision", {
+			resolvedUserId,
+			plan,
+			periodStart: periodStart.toISOString(),
+			usedCount,
+			limit,
+			locked
+		});
 		const { error } = await supabaseAdmin.from("leads").insert([leadData]);
 		if (error) {
 			if (error.code === "23505") return new Response(JSON.stringify({

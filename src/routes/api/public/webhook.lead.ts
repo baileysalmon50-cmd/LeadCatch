@@ -205,6 +205,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           let plan: PlanTier = "free";
           let usedCount = 0;
           let limit = Number.POSITIVE_INFINITY;
+          let periodStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
           if (realLead) {
             const { data: subscription, error: subscriptionError } = await supabaseAdmin
@@ -223,7 +224,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
 
             plan = (subscription?.plan as PlanTier | undefined) || "free";
             const callPeriodStart = subscription?.call_period_start;
-            const periodStart = callPeriodStart
+            periodStart = callPeriodStart
               ? new Date(callPeriodStart)
               : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
@@ -259,6 +260,8 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             notes,
             status: "new" as const,
           };
+
+          console.log("Cap decision", { resolvedUserId, plan, periodStart: periodStart.toISOString(), usedCount, limit, locked });
 
           const { error } = await supabaseAdmin.from("leads").insert([leadData]);
 
