@@ -3,6 +3,12 @@ import { normalizeDialedNumber } from "@/lib/phone";
 
 type RetellInboundWebhookPayload = {
   event?: string;
+  call_inbound?: {
+    agent_id?: string;
+    to_number?: string;
+    from_number?: string;
+    [key: string]: unknown;
+  };
   call?: {
     call_id?: string;
     to_number?: string;
@@ -15,20 +21,31 @@ type RetellInboundWebhookPayload = {
 };
 
 type RetellInboundWebhookResponse = {
-  dynamic_variables: {
-    shop_name: string;
-    greeting: string;
+  call_inbound: {
+    dynamic_variables: Record<string, string>;
   };
 };
 
 const DEFAULT_SHOP_NAME = "the shop";
 const DEFAULT_GREETING = "Hi! Thanks for calling.";
 
-function defaultInboundResponse(): RetellInboundWebhookResponse {
+function toStringOrUndefined(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  return String(value);
+}
+
+function inboundResponse(input?: {
+  shopName?: unknown;
+  greeting?: unknown;
+}): RetellInboundWebhookResponse {
+  const dynamicVariables: Record<string, string> = {
+    shop_name: toStringOrUndefined(input?.shopName) || DEFAULT_SHOP_NAME,
+    greeting: toStringOrUndefined(input?.greeting) || DEFAULT_GREETING,
+  };
+
   return {
-    dynamic_variables: {
-      shop_name: DEFAULT_SHOP_NAME,
-      greeting: DEFAULT_GREETING,
+    call_inbound: {
+      dynamic_variables: dynamicVariables,
     },
   };
 }
@@ -55,14 +72,15 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
           console.error("[webhook.call-inbound] Failed to parse JSON body", {
             error,
           });
-          return new Response(JSON.stringify(defaultInboundResponse()), {
+          return new Response(JSON.stringify(inboundResponse()), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
         }
 
-        const rawToNumber = body.call?.to_number ?? body.to_number;
-        const rawFromNumber = body.call?.from_number ?? body.from_number;
+        const rawToNumber = body.call_inbound?.to_number ?? body.call?.to_number ?? body.to_number;
+        const rawFromNumber =
+          body.call_inbound?.from_number ?? body.call?.from_number ?? body.from_number;
         const normalizedToNumber = normalizeDialedNumber(rawToNumber);
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -73,17 +91,23 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
             to_number: rawToNumber,
             from_number: rawFromNumber,
           });
-          return new Response(JSON.stringify(defaultInboundResponse()), {
+          return new Response(JSON.stringify(inboundResponse()), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
         }
 
-        const { data: profile, error: profileError } = await supabaseAdmin
+        const { data: profileMatches, error: profileError } = await supabaseAdmin
           .from("profiles")
           .select("id, business_name")
           .eq("retell_phone_id", normalizedToNumber)
-          .maybeSingle();
+          .limit(2);
+
+        const matchCount = (profileMatches || []).length;
+        console.log("[webhook.call-inbound] Profile lookup result", {
+          normalized_to_number: normalizedToNumber,
+          matches: matchCount,
+        });
 
         if (profileError) {
           console.error("[webhook.call-inbound] Profile lookup failed", {
@@ -91,29 +115,24 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
             from_number: rawFromNumber,
             error: profileError,
           });
-          return new Response(JSON.stringify(defaultInboundResponse()), {
+          return new Response(JSON.stringify(inboundResponse()), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
         }
 
+        const profile = matchCount === 1 ? profileMatches![0] : null;
+
         if (!profile?.id) {
           console.error("[webhook.call-inbound] Unmatched to_number", {
             to_number: normalizedToNumber,
             from_number: rawFromNumber,
+            matches: matchCount,
           });
-          return new Response(
-            JSON.stringify({
-              dynamic_variables: {
-                shop_name: DEFAULT_SHOP_NAME,
-                greeting: DEFAULT_GREETING,
-              },
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            },
-          );
+          return new Response(JSON.stringify(inboundResponse()), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const {
@@ -132,12 +151,12 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
             error: settingsError,
           });
           return new Response(
-            JSON.stringify({
-              dynamic_variables: {
-                shop_name: profile.business_name || DEFAULT_SHOP_NAME,
+            JSON.stringify(
+              inboundResponse({
+                shopName: profile.business_name,
                 greeting: DEFAULT_GREETING,
-              },
-            }),
+              }),
+            ),
             {
               status: 200,
               headers: { "Content-Type": "application/json" },
@@ -146,12 +165,12 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
         }
 
         return new Response(
-          JSON.stringify({
-            dynamic_variables: {
-              shop_name: profile.business_name || DEFAULT_SHOP_NAME,
-              greeting: settings?.ai_greeting || DEFAULT_GREETING,
-            },
-          }),
+          JSON.stringify(
+            inboundResponse({
+              shopName: profile.business_name,
+              greeting: settings?.ai_greeting,
+            }),
+          ),
           {
             status: 200,
             headers: { "Content-Type": "application/json" },

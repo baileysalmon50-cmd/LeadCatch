@@ -17,7 +17,7 @@ import { t as Route$14 } from "./route-teEVkAjr.mjs";
 import { t as Route$15 } from "./settings-6-yHDII5.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-9L73_SLH.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BubVSuZb.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-CPtacmZ6.css";
@@ -441,11 +441,15 @@ var Route$2 = createFileRoute("/api/public/webhook/lead")({ server: { handlers: 
 } } } });
 var DEFAULT_SHOP_NAME = "the shop";
 var DEFAULT_GREETING = "Hi! Thanks for calling.";
-function defaultInboundResponse() {
-	return { dynamic_variables: {
-		shop_name: DEFAULT_SHOP_NAME,
-		greeting: DEFAULT_GREETING
-	} };
+function toStringOrUndefined(value) {
+	if (value === null || value === void 0) return void 0;
+	return String(value);
+}
+function inboundResponse(input) {
+	return { call_inbound: { dynamic_variables: {
+		shop_name: toStringOrUndefined(input?.shopName) || DEFAULT_SHOP_NAME,
+		greeting: toStringOrUndefined(input?.greeting) || DEFAULT_GREETING
+	} } };
 }
 var Route$1 = createFileRoute("/api/public/webhook/call-inbound")({ server: { handlers: { POST: async ({ request }) => {
 	const secret = new URL(request.url).searchParams.get("secret");
@@ -459,13 +463,13 @@ var Route$1 = createFileRoute("/api/public/webhook/call-inbound")({ server: { ha
 		body = await request.json();
 	} catch (error) {
 		console.error("[webhook.call-inbound] Failed to parse JSON body", { error });
-		return new Response(JSON.stringify(defaultInboundResponse()), {
+		return new Response(JSON.stringify(inboundResponse()), {
 			status: 200,
 			headers: { "Content-Type": "application/json" }
 		});
 	}
-	const rawToNumber = body.call?.to_number ?? body.to_number;
-	const rawFromNumber = body.call?.from_number ?? body.from_number;
+	const rawToNumber = body.call_inbound?.to_number ?? body.call?.to_number ?? body.to_number;
+	const rawFromNumber = body.call_inbound?.from_number ?? body.call?.from_number ?? body.from_number;
 	const normalizedToNumber = normalizeDialedNumber(rawToNumber);
 	const { supabaseAdmin } = await import("./client.server-D1oHePJa.mjs");
 	if (!normalizedToNumber) {
@@ -474,32 +478,36 @@ var Route$1 = createFileRoute("/api/public/webhook/call-inbound")({ server: { ha
 			to_number: rawToNumber,
 			from_number: rawFromNumber
 		});
-		return new Response(JSON.stringify(defaultInboundResponse()), {
+		return new Response(JSON.stringify(inboundResponse()), {
 			status: 200,
 			headers: { "Content-Type": "application/json" }
 		});
 	}
-	const { data: profile, error: profileError } = await supabaseAdmin.from("profiles").select("id, business_name").eq("retell_phone_id", normalizedToNumber).maybeSingle();
+	const { data: profileMatches, error: profileError } = await supabaseAdmin.from("profiles").select("id, business_name").eq("retell_phone_id", normalizedToNumber).limit(2);
+	const matchCount = (profileMatches || []).length;
+	console.log("[webhook.call-inbound] Profile lookup result", {
+		normalized_to_number: normalizedToNumber,
+		matches: matchCount
+	});
 	if (profileError) {
 		console.error("[webhook.call-inbound] Profile lookup failed", {
 			to_number: normalizedToNumber,
 			from_number: rawFromNumber,
 			error: profileError
 		});
-		return new Response(JSON.stringify(defaultInboundResponse()), {
+		return new Response(JSON.stringify(inboundResponse()), {
 			status: 200,
 			headers: { "Content-Type": "application/json" }
 		});
 	}
+	const profile = matchCount === 1 ? profileMatches[0] : null;
 	if (!profile?.id) {
 		console.error("[webhook.call-inbound] Unmatched to_number", {
 			to_number: normalizedToNumber,
-			from_number: rawFromNumber
+			from_number: rawFromNumber,
+			matches: matchCount
 		});
-		return new Response(JSON.stringify({ dynamic_variables: {
-			shop_name: DEFAULT_SHOP_NAME,
-			greeting: DEFAULT_GREETING
-		} }), {
+		return new Response(JSON.stringify(inboundResponse()), {
 			status: 200,
 			headers: { "Content-Type": "application/json" }
 		});
@@ -511,18 +519,18 @@ var Route$1 = createFileRoute("/api/public/webhook/call-inbound")({ server: { ha
 			to_number: normalizedToNumber,
 			error: settingsError
 		});
-		return new Response(JSON.stringify({ dynamic_variables: {
-			shop_name: profile.business_name || DEFAULT_SHOP_NAME,
+		return new Response(JSON.stringify(inboundResponse({
+			shopName: profile.business_name,
 			greeting: DEFAULT_GREETING
-		} }), {
+		})), {
 			status: 200,
 			headers: { "Content-Type": "application/json" }
 		});
 	}
-	return new Response(JSON.stringify({ dynamic_variables: {
-		shop_name: profile.business_name || DEFAULT_SHOP_NAME,
-		greeting: settings?.ai_greeting || DEFAULT_GREETING
-	} }), {
+	return new Response(JSON.stringify(inboundResponse({
+		shopName: profile.business_name,
+		greeting: settings?.ai_greeting
+	})), {
 		status: 200,
 		headers: { "Content-Type": "application/json" }
 	});
