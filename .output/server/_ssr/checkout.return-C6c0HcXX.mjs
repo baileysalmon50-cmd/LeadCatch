@@ -2,7 +2,7 @@ import { g as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { t as Button } from "./button-CCQEfgNs.mjs";
 import { t as Card } from "./card-Bav9nr75.mjs";
-import { I as CircleCheck } from "../_libs/lucide-react.mjs";
+import { L as CircleCheck } from "../_libs/lucide-react.mjs";
 import { t as Route } from "./checkout.return-BoZSDKbP.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/checkout.return-C6c0HcXX.js
 var import_jsx_runtime = require_jsx_runtime();

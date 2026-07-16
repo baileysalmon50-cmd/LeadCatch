@@ -7,7 +7,7 @@ import { t as Button } from "./button-CCQEfgNs.mjs";
 import { t as Card } from "./card-Bav9nr75.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { a as XAxis, c as Bar, d as ResponsiveContainer, f as Tooltip, i as YAxis, l as Pie, n as BarChart, o as Line, r as LineChart, s as CartesianGrid, t as PieChart, u as Cell } from "../_libs/recharts+[...].mjs";
-import { x as Download } from "../_libs/lucide-react.mjs";
+import { S as Download } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/analytics-CvW5_dkS.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

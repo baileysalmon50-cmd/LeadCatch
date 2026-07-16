@@ -21,7 +21,17 @@ type Lead = {
   id: string; name: string; phone: string | null; email: string | null;
   business_need: string | null; callback_time: string | null;
   status: "new" | "called" | "converted"; created_at: string; updated_at: string; notes: string | null;
+  locked: boolean;
 };
+
+function maskLeadName(name: string): string {
+  const first = name.trim().split(/\s+/)[0] || "Lead";
+  return `${first} •••`;
+}
+
+function maskLeadPhone(phone: string | null): string {
+  return phone ? "•••-••••" : "—";
+}
 
 function Dashboard() {
   const { user } = Route.useRouteContext();
@@ -168,9 +178,9 @@ function Dashboard() {
               <tbody>
                 {leads.slice(0, 10).map((l) => (
                   <tr key={l.id} className="border-t hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setSelectedLead(l)}>
-                    <td className="px-5 py-3 font-medium">{l.name}</td>
-                    <td className="px-5 py-3 text-muted-foreground font-mono text-xs">{l.phone || "—"}</td>
-                    <td className="px-5 py-3 text-muted-foreground max-w-xs truncate">{l.business_need || "—"}</td>
+                    <td className="px-5 py-3 font-medium">{l.locked ? maskLeadName(l.name) : l.name}</td>
+                    <td className="px-5 py-3 text-muted-foreground font-mono text-xs">{l.locked ? maskLeadPhone(l.phone) : (l.phone || "—")}</td>
+                    <td className={`px-5 py-3 text-muted-foreground max-w-xs truncate ${l.locked ? "blur-[2px]" : ""}`}>{l.locked ? "Locked lead details" : (l.business_need || "—")}</td>
                     <td className="px-5 py-3 text-muted-foreground text-xs">{new Date(l.created_at).toLocaleString()}</td>
                     <td className="px-5 py-3"><StatusBadge status={l.status} /></td>
                   </tr>
@@ -187,31 +197,37 @@ function Dashboard() {
             <>
               <DialogHeader className="flex flex-row items-start justify-between space-y-0 pr-8">
                 <div className="flex-1">
-                  <DialogTitle className="text-xl md:text-2xl">{selectedLead.name}</DialogTitle>
+                  <DialogTitle className="text-xl md:text-2xl">{selectedLead.locked ? maskLeadName(selectedLead.name) : selectedLead.name}</DialogTitle>
                   <p className="text-xs text-muted-foreground mt-1">Created {new Date(selectedLead.created_at).toLocaleString()}</p>
                 </div>
               </DialogHeader>
+
+              {selectedLead.locked && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+                  This lead is locked by your current plan. <a href="/pricing" className="underline underline-offset-2">Upgrade to unlock</a>.
+                </div>
+              )}
 
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase">Phone</p>
-                    <p className="text-sm font-mono mt-1">{selectedLead.phone || "—"}</p>
+                    <p className="text-sm font-mono mt-1">{selectedLead.locked ? maskLeadPhone(selectedLead.phone) : (selectedLead.phone || "—")}</p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase">Email</p>
-                    <p className="text-sm mt-1 break-all">{selectedLead.email || "—"}</p>
+                    <p className="text-sm mt-1 break-all">{selectedLead.locked ? "locked@hidden" : (selectedLead.email || "—")}</p>
                   </div>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Business Need</p>
-                  <p className="text-sm mt-1">{selectedLead.business_need || "—"}</p>
+                  <p className={`text-sm mt-1 ${selectedLead.locked ? "blur-[2px]" : ""}`}>{selectedLead.locked ? "Lead details hidden until upgrade." : (selectedLead.business_need || "—")}</p>
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Callback Time</p>
-                  <p className="text-sm mt-1">{selectedLead.callback_time || "—"}</p>
+                  <p className="text-sm mt-1">{selectedLead.locked ? "Locked" : (selectedLead.callback_time || "—")}</p>
                 </div>
 
                 <div>
@@ -232,14 +248,15 @@ function Dashboard() {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Notes</p>
                   <Textarea
-                    placeholder="Add notes about this lead..."
-                    value={selectedLead.notes || ""}
+                    placeholder={selectedLead.locked ? "Upgrade to unlock notes" : "Add notes about this lead..."}
+                    value={selectedLead.locked ? "Locked" : (selectedLead.notes || "")}
                     onChange={(e) => {
+                      if (selectedLead.locked) return;
                       setSelectedLead({ ...selectedLead, notes: e.target.value });
                       updateLeadNotes(selectedLead.id, e.target.value);
                     }}
-                    disabled={updatingNotes}
-                    className="min-h-24"
+                    disabled={updatingNotes || selectedLead.locked}
+                    className={`min-h-24 ${selectedLead.locked ? "blur-[2px]" : ""}`}
                   />
                 </div>
 

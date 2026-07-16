@@ -42,6 +42,8 @@ export const provisionPhoneNumber = createServerFn({ method: "POST" })
       throw new Error("RETELL_API_KEY is missing on the server");
     }
 
+    const inboundWebhookUrl = process.env.RETELL_INBOUND_WEBHOOK_URL;
+
     const response = await fetch("https://api.retellai.com/create-phone-number", {
       method: "POST",
       headers: {
@@ -52,6 +54,7 @@ export const provisionPhoneNumber = createServerFn({ method: "POST" })
         area_code: Number(data.areaCode),
         inbound_agent_id: "agent_34a0e868acce3d45d684408992",
         nickname: profile?.business_name || "LeadCatch User",
+        ...(inboundWebhookUrl ? { inbound_webhook_url: inboundWebhookUrl } : {}),
       }),
     });
 

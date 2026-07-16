@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { normalizeDialedNumber } from "@/lib/phone";
 
 type RetellWebhookPayload = {
   event?: string;
@@ -33,24 +34,45 @@ function isRealLead(name: string, businessNeed: string | null) {
   return name !== "Unknown caller" || !!businessNeed;
 }
 
-function normalizeDialedNumber(rawToNumber?: string): string | null {
-  if (!rawToNumber) return null;
-  const trimmed = rawToNumber.trim();
-  if (!trimmed) return null;
+type LeadNotificationContext = {
+  userId: string;
+  locked: boolean;
+  name: string;
+  phone: string | null;
+  businessNeed: string | null;
+  profileEmail: string | null;
+  smsEnabled: boolean;
+  smsPhone: string | null;
+  emailEnabled: boolean;
+  appBaseUrl: string;
+};
 
-  const digits = trimmed.replace(/\D/g, "");
-  if (!digits) return null;
+async function sendLeadNotifications(context: LeadNotificationContext) {
+  const leadsUrl = `${context.appBaseUrl}/leads`;
+  const pricingUrl = `${context.appBaseUrl}/pricing`;
+  const detailedMessage = `New lead: ${context.name}${context.phone ? ` (${context.phone})` : ""}${context.businessNeed ? ` — ${context.businessNeed}` : ""}. View: ${leadsUrl}`;
+  const lockedMessage = `A new lead just called — you've reached your free plan limit. Upgrade to see their details: ${pricingUrl}`;
+  const message = context.locked ? lockedMessage : detailedMessage;
 
-  if (trimmed.startsWith("+")) {
-    return `+${digits}`;
+  if (context.emailEnabled && context.profileEmail) {
+    // TODO: wire to real provider (Resend/Postmark). For now, log the payload.
+    console.log("[lead-notification][email]", {
+      user_id: context.userId,
+      to: context.profileEmail,
+      locked: context.locked,
+      message,
+    });
   }
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return `+${digits}`;
+
+  if (context.smsEnabled && context.smsPhone) {
+    // TODO: wire to real SMS provider (Twilio). For now, log the payload.
+    console.log("[lead-notification][sms]", {
+      user_id: context.userId,
+      to: context.smsPhone,
+      locked: context.locked,
+      message,
+    });
   }
-  if (digits.length === 10) {
-    return `+1${digits}`;
-  }
-  return `+${digits}`;
 }
 
 export const Route = createFileRoute("/api/public/webhook/lead")({
@@ -187,7 +209,7 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
           if (realLead) {
             const { data: subscription, error: subscriptionError } = await supabaseAdmin
               .from("subscriptions")
-              .select("plan")
+              .select("plan, call_period_start")
               .eq("user_id", resolvedUserId)
               .maybeSingle();
 
@@ -200,8 +222,10 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             }
 
             plan = (subscription?.plan as PlanTier | undefined) || "free";
-            const now = new Date();
-            const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const callPeriodStart = subscription?.call_period_start;
+            const periodStart = callPeriodStart
+              ? new Date(callPeriodStart)
+              : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
             const { data: countedLeads, error: countError } = await supabaseAdmin
               .from("leads")
@@ -253,7 +277,44 @@ export const Route = createFileRoute("/api/public/webhook/lead")({
             });
           }
 
-          const shouldNotify = realLead && !locked;
+          const shouldNotify = realLead;
+
+          if (shouldNotify) {
+            const [{ data: settings, error: settingsError }, { data: profile, error: profileError }] = await Promise.all([
+              supabaseAdmin
+                .from("settings")
+                .select("notifications_email, notifications_sms, notifications_sms_phone")
+                .eq("user_id", resolvedUserId)
+                .maybeSingle(),
+              supabaseAdmin
+                .from("profiles")
+                .select("email")
+                .eq("id", resolvedUserId)
+                .maybeSingle(),
+            ]);
+
+            if (settingsError || profileError) {
+              console.error("Lead notification settings/profile lookup failed", {
+                user_id: resolvedUserId,
+                settingsError,
+                profileError,
+              });
+            } else {
+              const appBaseUrl = new URL(request.url).origin;
+              await sendLeadNotifications({
+                userId: resolvedUserId,
+                locked,
+                name: customerName,
+                phone: customerPhone,
+                businessNeed,
+                profileEmail: profile?.email || null,
+                smsEnabled: !!settings?.notifications_sms,
+                smsPhone: settings?.notifications_sms_phone || null,
+                emailEnabled: !!settings?.notifications_email,
+                appBaseUrl,
+              });
+            }
+          }
 
           if (realLead) {
             console.log(

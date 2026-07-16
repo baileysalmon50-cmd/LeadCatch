@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusBadge } from "@/components/status-badge";
 import { AddLeadDialog } from "@/components/add-lead-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, Search, Download, Inbox } from "lucide-react";
+import { Trash2, Search, Download, Inbox, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/leads")({
@@ -21,7 +21,21 @@ type Lead = {
   id: string; name: string; phone: string | null; email: string | null;
   business_need: string | null; callback_time: string | null;
   status: "new" | "called" | "converted"; created_at: string; updated_at: string; notes: string | null;
+  locked: boolean;
 };
+
+function maskLeadName(name: string): string {
+  const first = name.trim().split(/\s+/)[0] || "Lead";
+  return `${first} •••`;
+}
+
+function maskLeadPhone(phone: string | null): string {
+  return phone ? "•••-••••" : "—";
+}
+
+function maskedLeadSummary(lead: Lead): string {
+  return lead.locked ? "Lead details hidden until you upgrade." : (lead.business_need || "No details captured.");
+}
 
 function canAddLead(plan: string, leadsThisPeriod: number) {
   if (plan === "free" && leadsThisPeriod >= 10) return false;
@@ -89,7 +103,16 @@ function LeadsPage() {
 
   function exportCsv() {
     const rows = [["Name","Phone","Email","Need","Callback","Status","Date","Notes"]];
-    filtered.forEach((l) => rows.push([l.name, l.phone||"", l.email||"", l.business_need||"", l.callback_time||"", l.status, new Date(l.created_at).toISOString(), l.notes||""]));
+    filtered.forEach((l) => rows.push([
+      l.locked ? maskLeadName(l.name) : l.name,
+      l.locked ? maskLeadPhone(l.phone) : (l.phone || ""),
+      l.locked ? "locked" : (l.email || ""),
+      l.locked ? "locked" : (l.business_need || ""),
+      l.locked ? "locked" : (l.callback_time || ""),
+      l.status,
+      new Date(l.created_at).toISOString(),
+      l.locked ? "locked" : (l.notes || ""),
+    ]));
     const csv = rows.map((r) => r.map((c) => `"${(c as string).replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
@@ -140,15 +163,25 @@ function LeadsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="font-semibold">{l.name}</h3>
+                    <h3 className="font-semibold">{l.locked ? maskLeadName(l.name) : l.name}</h3>
                     <StatusBadge status={l.status} />
+                    {l.locked && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700">
+                        <Lock className="h-3 w-3" /> Locked
+                      </span>
+                    )}
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{l.business_need || "No details captured."}</p>
+                  <p className={`mt-1 text-sm text-muted-foreground ${l.locked ? "blur-[2px]" : ""}`}>{maskedLeadSummary(l)}</p>
                   <div className="mt-2 flex gap-4 text-xs text-muted-foreground flex-wrap">
-                    {l.phone && <span className="font-mono">{l.phone}</span>}
-                    {l.email && <span>{l.email}</span>}
+                    <span className="font-mono">{l.locked ? maskLeadPhone(l.phone) : (l.phone || "—")}</span>
+                    <span>{l.locked ? "locked@hidden" : (l.email || "—")}</span>
                     <span>{new Date(l.created_at).toLocaleString()}</span>
                   </div>
+                  {l.locked && (
+                    <p className="mt-2 text-xs text-amber-700">
+                      Upgrade to unlock full lead details. <a href="/pricing" className="underline underline-offset-2">Upgrade to unlock</a>
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
@@ -163,16 +196,21 @@ function LeadsPage() {
             <div className="p-6 space-y-5">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold">{selected.name}</h2>
+                  <h2 className="text-xl font-bold">{selected.locked ? maskLeadName(selected.name) : selected.name}</h2>
                   <p className="text-xs text-muted-foreground">Captured {new Date(selected.created_at).toLocaleString()}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Close</Button>
               </div>
+              {selected.locked && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+                  This lead is locked by your current plan. <a href="/pricing" className="underline underline-offset-2">Upgrade to unlock</a>.
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><p className="text-xs text-muted-foreground">Phone</p><p className="font-mono">{selected.phone || "—"}</p></div>
-                <div><p className="text-xs text-muted-foreground">Email</p><p>{selected.email || "—"}</p></div>
-                <div className="col-span-2"><p className="text-xs text-muted-foreground">Callback time</p><p>{selected.callback_time || "—"}</p></div>
-                <div className="col-span-2"><p className="text-xs text-muted-foreground">Need</p><p>{selected.business_need || "—"}</p></div>
+                <div><p className="text-xs text-muted-foreground">Phone</p><p className="font-mono">{selected.locked ? maskLeadPhone(selected.phone) : (selected.phone || "—")}</p></div>
+                <div><p className="text-xs text-muted-foreground">Email</p><p>{selected.locked ? "locked@hidden" : (selected.email || "—")}</p></div>
+                <div className="col-span-2"><p className="text-xs text-muted-foreground">Callback time</p><p>{selected.locked ? "Locked" : (selected.callback_time || "—")}</p></div>
+                <div className="col-span-2"><p className="text-xs text-muted-foreground">Need</p><p className={selected.locked ? "blur-[2px]" : ""}>{selected.locked ? "Lead details hidden until upgrade." : (selected.business_need || "—")}</p></div>
               </div>
  <div>
                 <p className="text-xs text-muted-foreground mb-1.5">Status</p>
@@ -187,7 +225,7 @@ function LeadsPage() {
               </div> 
               <div>
                 <p className="text-xs text-muted-foreground mb-1.5">Notes</p>
-                <Textarea defaultValue={selected.notes || ""} placeholder="Add your notes..." onBlur={(e) => updateNotes(selected.id, e.target.value)} className="min-h-32" />
+                <Textarea defaultValue={selected.locked ? "Locked" : (selected.notes || "")} placeholder={selected.locked ? "Upgrade to unlock notes" : "Add your notes..."} onBlur={(e) => !selected.locked && updateNotes(selected.id, e.target.value)} className={`min-h-32 ${selected.locked ? "blur-[2px]" : ""}`} disabled={selected.locked} />
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>

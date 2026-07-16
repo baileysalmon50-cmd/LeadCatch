@@ -543,6 +543,24 @@ var LayoutDashboard = createLucideIcon("layout-dashboard", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Lock = createLucideIcon("lock", [["rect", {
+	width: "18",
+	height: "11",
+	x: "3",
+	y: "11",
+	rx: "2",
+	ry: "2",
+	key: "1w4ew1"
+}], ["path", {
+	d: "M7 11V7a5 5 0 0 1 10 0v4",
+	key: "fwvmzm"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var LogOut = createLucideIcon("log-out", [
 	["path", {
 		d: "m16 17 5-5-5-5",
@@ -794,4 +812,4 @@ var Zap = createLucideIcon("zap", [["path", {
 	key: "1xq2db"
 }]]);
 //#endregion
-export { CalendarDays as A, Clock as C, ChevronLeft as D, ChevronRight as E, Sparkles as F, CircleCheck as I, ChartColumn as L, Bot as M, Bell as N, ChevronDown as O, ArrowRight as P, CreditCard as S, ChevronUp as T, LayoutDashboard as _, User as a, ExternalLink as b, Smartphone as c, Plus as d, Phone as f, LogOut as g, MessageSquare as h, Users as i, CalendarClock as j, Check as k, Settings as l, PhoneIncoming as m, X as n, TrendingUp as o, PhoneOff as p, Wrench as r, Trash2 as s, Zap as t, Search as u, Info as v, Clock3 as w, Download as x, Inbox as y };
+export { Check as A, CreditCard as C, ChevronRight as D, ChevronUp as E, ArrowRight as F, Sparkles as I, CircleCheck as L, CalendarClock as M, Bot as N, ChevronLeft as O, Bell as P, ChartColumn as R, Download as S, Clock3 as T, Lock as _, User as a, Inbox as b, Smartphone as c, Plus as d, Phone as f, LogOut as g, MessageSquare as h, Users as i, CalendarDays as j, ChevronDown as k, Settings as l, PhoneIncoming as m, X as n, TrendingUp as o, PhoneOff as p, Wrench as r, Trash2 as s, Zap as t, Search as u, LayoutDashboard as v, Clock as w, ExternalLink as x, Info as y };

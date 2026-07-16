@@ -22,6 +22,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppointmentsRouteImport } from './routes/_authenticated/appointments'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as ApiPublicWebhookLeadRouteImport } from './routes/api/public/webhook.lead'
+import { Route as ApiPublicWebhookCallInboundRouteImport } from './routes/api/public/webhook.call-inbound'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -89,6 +90,12 @@ const ApiPublicWebhookLeadRoute = ApiPublicWebhookLeadRouteImport.update({
   path: '/api/public/webhook/lead',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhookCallInboundRoute =
+  ApiPublicWebhookCallInboundRouteImport.update({
+    id: '/api/public/webhook/call-inbound',
+    path: '/api/public/webhook/call-inbound',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/webhook/call-inbound': typeof ApiPublicWebhookCallInboundRoute
   '/api/public/webhook/lead': typeof ApiPublicWebhookLeadRoute
 }
 export interface FileRoutesByTo {
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/webhook/call-inbound': typeof ApiPublicWebhookCallInboundRoute
   '/api/public/webhook/lead': typeof ApiPublicWebhookLeadRoute
 }
 export interface FileRoutesById {
@@ -141,6 +150,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/webhook/call-inbound': typeof ApiPublicWebhookCallInboundRoute
   '/api/public/webhook/lead': typeof ApiPublicWebhookLeadRoute
 }
 export interface FileRouteTypes {
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/checkout/return'
     | '/api/public/payments/webhook'
+    | '/api/public/webhook/call-inbound'
     | '/api/public/webhook/lead'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/checkout/return'
     | '/api/public/payments/webhook'
+    | '/api/public/webhook/call-inbound'
     | '/api/public/webhook/lead'
   id:
     | '__root__'
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/checkout/return'
     | '/api/public/payments/webhook'
+    | '/api/public/webhook/call-inbound'
     | '/api/public/webhook/lead'
   fileRoutesById: FileRoutesById
 }
@@ -200,6 +213,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  ApiPublicWebhookCallInboundRoute: typeof ApiPublicWebhookCallInboundRoute
   ApiPublicWebhookLeadRoute: typeof ApiPublicWebhookLeadRoute
 }
 
@@ -296,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhookLeadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhook/call-inbound': {
+      id: '/api/public/webhook/call-inbound'
+      path: '/api/public/webhook/call-inbound'
+      fullPath: '/api/public/webhook/call-inbound'
+      preLoaderRoute: typeof ApiPublicWebhookCallInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -335,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  ApiPublicWebhookCallInboundRoute: ApiPublicWebhookCallInboundRoute,
   ApiPublicWebhookLeadRoute: ApiPublicWebhookLeadRoute,
 }
 export const routeTree = rootRouteImport

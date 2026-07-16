@@ -5,7 +5,7 @@ import { F as useNavigate, f as Outlet, g as Link, l as useRouterState } from ".
 import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { r as cn, t as Button } from "./button-CCQEfgNs.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
-import { A as CalendarDays, L as ChartColumn, S as CreditCard, _ as LayoutDashboard, g as LogOut, i as Users, l as Settings } from "../_libs/lucide-react.mjs";
+import { C as CreditCard, R as ChartColumn, g as LogOut, i as Users, j as CalendarDays, l as Settings, v as LayoutDashboard } from "../_libs/lucide-react.mjs";
 import { t as Logo } from "./logo-2UeFUhWv.mjs";
 import { t as Route } from "./route-teEVkAjr.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/route-DZIZsHVE2.js
