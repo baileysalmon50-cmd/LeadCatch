@@ -11,8 +11,8 @@ import { t as Input } from "./label-D2fwATjQ.mjs";
 import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DYjyjhZD.mjs";
 import { t as AddLeadDialog } from "./add-lead-dialog-CgdMOrhc.mjs";
-import { t as Route } from "./leads-DOxTh3jI.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/leads-C29iJnIp.js
+import { t as Route } from "./leads-CbVEt9Yz.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/leads-DdJq_AKD.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var AlertDialog = Root2;
@@ -127,7 +127,19 @@ function LeadsPage() {
 		statusFilter
 	]);
 	async function updateStatus(id, status) {
-		const { error } = await supabase.from("leads").update({ status }).eq("id", id);
+		const { data: existingLead, error: fetchError } = await supabase.from("leads").select("called_at, converted_at").eq("id", id).single();
+		if (fetchError) {
+			toast.error(fetchError.message);
+			return;
+		}
+		const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+		const updatePayload = { status };
+		if (status === "called" && !existingLead.called_at) updatePayload.called_at = nowIso;
+		if (status === "converted") {
+			if (!existingLead.converted_at) updatePayload.converted_at = nowIso;
+			if (!existingLead.called_at) updatePayload.called_at = nowIso;
+		}
+		const { error } = await supabase.from("leads").update(updatePayload).eq("id", id);
 		if (error) toast.error(error.message);
 		else toast.success("Status updated");
 	}

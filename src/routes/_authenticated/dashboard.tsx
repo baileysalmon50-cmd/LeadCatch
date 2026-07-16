@@ -21,8 +21,21 @@ type Lead = {
   id: string; name: string; phone: string | null; email: string | null;
   business_need: string | null; callback_time: string | null;
   status: "new" | "called" | "converted"; created_at: string; updated_at: string; notes: string | null;
+  called_at: string | null; converted_at: string | null;
   locked: boolean;
 };
+
+function formatDuration(seconds: number): string {
+  if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const remainingMinutes = Math.floor((seconds % 3600) / 60);
+  return `${hours}:${String(remainingMinutes).padStart(2, "0")}`;
+}
 
 function maskLeadName(name: string): string {
   const first = name.trim().split(/\s+/)[0] || "Lead";
@@ -91,6 +104,20 @@ function Dashboard() {
   const converted = thisMonth.filter((l) => l.status === "converted").length;
   const conversion = captured ? Math.round((converted / captured) * 100) : 0;
 
+  const responseTimeSeconds = leads
+    .filter((l) => !!l.called_at)
+    .map((l) => {
+      const calledAt = new Date(l.called_at as string).getTime();
+      const createdAt = new Date(l.created_at).getTime();
+      return Math.max(0, Math.round((calledAt - createdAt) / 1000));
+    })
+    .filter((seconds) => Number.isFinite(seconds));
+
+  const avgResponseSeconds = responseTimeSeconds.length
+    ? Math.round(responseTimeSeconds.reduce((sum, seconds) => sum + seconds, 0) / responseTimeSeconds.length)
+    : null;
+  const avgResponseDisplay = avgResponseSeconds === null ? "—" : formatDuration(avgResponseSeconds);
+
   async function updateLeadStatus(id: string, status: Lead["status"]) {
     setUpdatingStatus(true);
     const { error } = await supabase.from("leads").update({ status }).eq("id", id);
@@ -119,7 +146,7 @@ function Dashboard() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard label="Missed calls this month" value={captured} icon={PhoneOff} />
         <StatsCard label="Leads captured" value={captured} hint="All converted to leads" icon={Users} accent />
-        <StatsCard label="Avg. response time" value="3m 12s" hint="Last 30 days" icon={Clock} />
+        <StatsCard label="Avg. response time" value={avgResponseDisplay} hint="Last 30 days" icon={Clock} />
         <StatsCard label="Conversion rate" value={`${conversion}%`} hint={`${converted} of ${captured}`} icon={TrendingUp} />
       </div>
 

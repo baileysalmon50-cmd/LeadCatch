@@ -21,6 +21,7 @@ type Lead = {
   id: string; name: string; phone: string | null; email: string | null;
   business_need: string | null; callback_time: string | null;
   status: "new" | "called" | "converted"; created_at: string; updated_at: string; notes: string | null;
+  called_at: string | null; converted_at: string | null;
   locked: boolean;
 };
 
@@ -86,7 +87,38 @@ function LeadsPage() {
   }), [leads, query, statusFilter]);
 
   async function updateStatus(id: string, status: Lead["status"]) {
-    const { error } = await supabase.from("leads").update({ status }).eq("id", id);
+    const { data: existingLead, error: fetchError } = await supabase
+      .from("leads")
+      .select("called_at, converted_at")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      toast.error(fetchError.message);
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatePayload: {
+      status: Lead["status"];
+      called_at?: string;
+      converted_at?: string;
+    } = { status };
+
+    if (status === "called" && !existingLead.called_at) {
+      updatePayload.called_at = nowIso;
+    }
+
+    if (status === "converted") {
+      if (!existingLead.converted_at) {
+        updatePayload.converted_at = nowIso;
+      }
+      if (!existingLead.called_at) {
+        updatePayload.called_at = nowIso;
+      }
+    }
+
+    const { error } = await supabase.from("leads").update(updatePayload).eq("id", id);
     if (error) toast.error(error.message);
     else toast.success("Status updated");
   }

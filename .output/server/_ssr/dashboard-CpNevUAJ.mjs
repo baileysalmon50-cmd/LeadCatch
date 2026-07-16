@@ -11,9 +11,9 @@ import { t as StatusBadge } from "./status-badge-CCqdNHSw.mjs";
 import { a as DialogHeader, i as DialogFooter, n as DialogContent, o as DialogTitle, t as Dialog } from "./dialog-DYBpJUt2.mjs";
 import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DYjyjhZD.mjs";
-import { t as Route } from "./dashboard-BsTQpoai.mjs";
+import { t as Route } from "./dashboard-B4R7hl6V.mjs";
 import { t as AddLeadDialog } from "./add-lead-dialog-CgdMOrhc.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/dashboard-CWwB6Vv5.js
+//#region node_modules/.nitro/vite/services/ssr/assets/dashboard-CpNevUAJ.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function StatsCard({ label, value, hint, icon: Icon, accent }) {
@@ -40,6 +40,16 @@ function StatsCard({ label, value, hint, icon: Icon, accent }) {
 			})]
 		})
 	});
+}
+function formatDuration(seconds) {
+	if (seconds < 3600) {
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+	}
+	const hours = Math.floor(seconds / 3600);
+	const remainingMinutes = Math.floor(seconds % 3600 / 60);
+	return `${hours}:${String(remainingMinutes).padStart(2, "0")}`;
 }
 function maskLeadName(name) {
 	return `${name.trim().split(/\s+/)[0] || "Lead"} •••`;
@@ -92,6 +102,13 @@ function Dashboard() {
 	const captured = thisMonth.length;
 	const converted = thisMonth.filter((l) => l.status === "converted").length;
 	const conversion = captured ? Math.round(converted / captured * 100) : 0;
+	const responseTimeSeconds = leads.filter((l) => !!l.called_at).map((l) => {
+		const calledAt = new Date(l.called_at).getTime();
+		const createdAt = new Date(l.created_at).getTime();
+		return Math.max(0, Math.round((calledAt - createdAt) / 1e3));
+	}).filter((seconds) => Number.isFinite(seconds));
+	const avgResponseSeconds = responseTimeSeconds.length ? Math.round(responseTimeSeconds.reduce((sum, seconds) => sum + seconds, 0) / responseTimeSeconds.length) : null;
+	const avgResponseDisplay = avgResponseSeconds === null ? "—" : formatDuration(avgResponseSeconds);
 	async function updateLeadStatus(id, status) {
 		setUpdatingStatus(true);
 		const { error } = await supabase.from("leads").update({ status }).eq("id", id);
@@ -135,7 +152,7 @@ function Dashboard() {
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatsCard, {
 						label: "Avg. response time",
-						value: "3m 12s",
+						value: avgResponseDisplay,
 						hint: "Last 30 days",
 						icon: Clock
 					}),

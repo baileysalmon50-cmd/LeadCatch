@@ -6,7 +6,7 @@ import { n as buttonVariants, r as cn, t as Button } from "./button-CCQEfgNs.mjs
 import { t as Card } from "./card-Bav9nr75.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { D as ChevronRight, O as ChevronLeft, T as Clock3, b as Inbox, d as Plus, j as CalendarDays, k as ChevronDown, r as Wrench } from "../_libs/lucide-react.mjs";
-import { t as Route } from "./appointments-CfC64IDS.mjs";
+import { t as Route } from "./appointments-Bh0nYZq2.mjs";
 import { t as StatusBadge } from "./status-badge-CCqdNHSw.mjs";
 import { a as DialogHeader, i as DialogFooter, n as DialogContent, o as DialogTitle, r as DialogDescription, t as Dialog } from "./dialog-DYBpJUt2.mjs";
 import { n as Label, t as Input } from "./label-D2fwATjQ.mjs";
@@ -14,7 +14,7 @@ import { t as Textarea } from "./textarea-Dfe41XSO.mjs";
 import { i as Trigger, n as Portal, r as Root2, t as Content2 } from "../_libs/@radix-ui/react-popover+[...].mjs";
 import { a as SelectValue, i as SelectTrigger, n as SelectContent, r as SelectItem, t as Select } from "./select-DYjyjhZD.mjs";
 import { n as getDefaultClassNames, t as DayPicker } from "../_libs/react-day-picker.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/appointments-BCWQa_uQ.js
+//#region node_modules/.nitro/vite/services/ssr/assets/appointments-C_-U6eW8.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var STATUS_OPTIONS = [
@@ -488,6 +488,31 @@ function startOfDay(date) {
 function endOfDay(date) {
 	return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
+function startOfWeekMonday(date) {
+	const dayStart = startOfDay(date);
+	const day = dayStart.getDay();
+	const offset = day === 0 ? -6 : 1 - day;
+	const result = new Date(dayStart);
+	result.setDate(dayStart.getDate() + offset);
+	return startOfDay(result);
+}
+function endOfWeekSunday(date) {
+	const weekStart = startOfWeekMonday(date);
+	const result = new Date(weekStart);
+	result.setDate(weekStart.getDate() + 6);
+	return endOfDay(result);
+}
+function dayKey(date) {
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function weekDays(date) {
+	const start = startOfWeekMonday(date);
+	return Array.from({ length: 7 }, (_, index) => {
+		const day = new Date(start);
+		day.setDate(start.getDate() + index);
+		return day;
+	});
+}
 function vehicleLabel(item) {
 	return [
 		item.vehicle_year,
@@ -503,6 +528,13 @@ function formatDay(date) {
 		year: "numeric"
 	});
 }
+function formatDayShort(date) {
+	return date.toLocaleDateString(void 0, {
+		weekday: "short",
+		month: "short",
+		day: "numeric"
+	});
+}
 function formatTimeRange(startsAt, endsAt) {
 	const start = new Date(startsAt);
 	const end = new Date(endsAt);
@@ -516,29 +548,57 @@ function AppointmentsPage() {
 	const { user } = Route.useRouteContext();
 	const [appointments, setAppointments] = (0, import_react.useState)([]);
 	const [selectedDate, setSelectedDate] = (0, import_react.useState)(startOfDay(/* @__PURE__ */ new Date()));
+	const [viewMode, setViewMode] = (0, import_react.useState)("day");
 	const [newDialogOpen, setNewDialogOpen] = (0, import_react.useState)(false);
 	const [editing, setEditing] = (0, import_react.useState)(null);
-	function refetchDay(date = selectedDate) {
-		const dayStart = startOfDay(date).toISOString();
-		const dayEnd = endOfDay(date).toISOString();
-		return supabase.from("appointments").select("*").eq("user_id", user.id).gte("starts_at", dayStart).lte("starts_at", dayEnd).order("starts_at", { ascending: true }).then(({ data }) => setAppointments(data || []));
+	function rangeForView(date = selectedDate, mode = viewMode) {
+		return {
+			rangeStart: mode === "week" ? startOfWeekMonday(date) : startOfDay(date),
+			rangeEnd: mode === "week" ? endOfWeekSunday(date) : endOfDay(date)
+		};
+	}
+	function refetchRange(rangeStart, rangeEnd) {
+		const startIso = rangeStart.toISOString();
+		const endIso = rangeEnd.toISOString();
+		return supabase.from("appointments").select("*").eq("user_id", user.id).gte("starts_at", startIso).lte("starts_at", endIso).order("starts_at", { ascending: true }).then(({ data }) => setAppointments(data || []));
 	}
 	(0, import_react.useEffect)(() => {
-		const dayStart = startOfDay(selectedDate).toISOString();
-		refetchDay(selectedDate);
-		const channel = supabase.channel(`appointments-${user.id}-${dayStart}`).on("postgres_changes", {
+		const { rangeStart, rangeEnd } = rangeForView(selectedDate, viewMode);
+		const channelRangeKey = `${rangeStart.toISOString()}-${rangeEnd.toISOString()}`;
+		refetchRange(rangeStart, rangeEnd);
+		const channel = supabase.channel(`appointments-${user.id}-${channelRangeKey}`).on("postgres_changes", {
 			event: "*",
 			schema: "public",
 			table: "appointments",
 			filter: `user_id=eq.${user.id}`
 		}, () => {
-			refetchDay(selectedDate);
+			refetchRange(rangeStart, rangeEnd);
 		}).subscribe();
 		return () => {
 			supabase.removeChannel(channel);
 		};
-	}, [user.id, selectedDate]);
-	const selectedLabel = (0, import_react.useMemo)(() => formatDay(selectedDate), [selectedDate]);
+	}, [
+		user.id,
+		selectedDate,
+		viewMode
+	]);
+	const selectedLabel = (0, import_react.useMemo)(() => {
+		if (viewMode === "day") return formatDay(selectedDate);
+		const weekStart = startOfWeekMonday(selectedDate);
+		const weekEnd = endOfWeekSunday(selectedDate);
+		return `${formatDayShort(weekStart)} - ${formatDayShort(weekEnd)}`;
+	}, [selectedDate, viewMode]);
+	const appointmentsByDay = (0, import_react.useMemo)(() => {
+		const grouped = /* @__PURE__ */ new Map();
+		appointments.forEach((item) => {
+			const key = dayKey(new Date(item.starts_at));
+			const existing = grouped.get(key);
+			if (existing) existing.push(item);
+			else grouped.set(key, [item]);
+		});
+		return grouped;
+	}, [appointments]);
+	const weekViewDays = (0, import_react.useMemo)(() => weekDays(selectedDate), [selectedDate]);
 	function jumpDays(offset) {
 		setSelectedDate((current) => {
 			const next = new Date(current);
@@ -566,8 +626,24 @@ function AppointmentsPage() {
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 							variant: "outline",
 							size: "icon",
-							onClick: () => jumpDays(-1),
+							onClick: () => jumpDays(viewMode === "day" ? -1 : -7),
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { className: "h-4 w-4" })
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "inline-flex items-center rounded-md border bg-background p-1",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								variant: viewMode === "day" ? "default" : "ghost",
+								size: "sm",
+								onClick: () => setViewMode("day"),
+								className: "h-8",
+								children: "Day"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								variant: viewMode === "week" ? "default" : "ghost",
+								size: "sm",
+								onClick: () => setViewMode("week"),
+								className: "h-8",
+								children: "Week"
+							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Popover, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(PopoverTrigger, {
 							asChild: true,
@@ -588,7 +664,7 @@ function AppointmentsPage() {
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 							variant: "outline",
 							size: "icon",
-							onClick: () => jumpDays(1),
+							onClick: () => jumpDays(viewMode === "day" ? 1 : 7),
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { className: "h-4 w-4" })
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
@@ -604,7 +680,7 @@ function AppointmentsPage() {
 					]
 				})]
 			}),
-			appointments.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
+			viewMode === "day" ? appointments.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
 				className: "p-16 text-center",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Inbox, { className: "h-10 w-10 mx-auto text-muted-foreground/50" }),
@@ -663,6 +739,58 @@ function AppointmentsPage() {
 						})]
 					})
 				}, item.id))
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "grid grid-cols-1 md:grid-cols-7 gap-3",
+				children: weekViewDays.map((day) => {
+					const key = dayKey(day);
+					const dayAppointments = appointmentsByDay.get(key) || [];
+					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
+						className: "p-3 space-y-3 min-h-40",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+							type: "button",
+							className: "w-full text-left",
+							onClick: () => {
+								setSelectedDate(startOfDay(day));
+								setViewMode("day");
+							},
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-sm font-semibold",
+								children: formatDayShort(day)
+							})
+						}), dayAppointments.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs text-muted-foreground",
+							children: "No appointments"
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "space-y-2",
+							children: dayAppointments.map((item) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+								type: "button",
+								className: "w-full rounded-md border bg-card p-2 text-left hover:bg-muted/40 transition-colors",
+								onClick: () => setEditing(item),
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "flex items-center justify-between gap-2",
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+											className: "text-xs font-medium",
+											children: formatTimeRange(item.starts_at, item.ends_at)
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StatusBadge, { status: item.status })]
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+										className: "text-sm font-semibold truncate",
+										children: item.customer_name
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+										className: "text-xs text-muted-foreground truncate",
+										children: item.service_name
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+										className: "text-xs text-muted-foreground",
+										children: ["Bay ", item.bay]
+									})
+								]
+							}, item.id))
+						})]
+					}, key);
+				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AppointmentDialog, {
 				userId: user.id,
@@ -670,7 +798,8 @@ function AppointmentsPage() {
 				onOpenChange: setNewDialogOpen,
 				selectedDate,
 				onSaved: () => {
-					refetchDay(selectedDate);
+					const { rangeStart, rangeEnd } = rangeForView(selectedDate, viewMode);
+					refetchRange(rangeStart, rangeEnd);
 				}
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AppointmentDialog, {
@@ -682,7 +811,8 @@ function AppointmentsPage() {
 				selectedDate,
 				appointment: editing,
 				onSaved: () => {
-					refetchDay(selectedDate).then(() => {
+					const { rangeStart, rangeEnd } = rangeForView(selectedDate, viewMode);
+					refetchRange(rangeStart, rangeEnd).then(() => {
 						setEditing(null);
 					});
 				}

@@ -6,21 +6,21 @@ import { I as useRouter, c as HeadContent, d as createRouter, f as Outlet, g as 
 import { P as require_jsx_runtime } from "../_libs/@radix-ui/react-alert-dialog+[...].mjs";
 import { t as Route$7 } from "./analytics-BqBBrcPC.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
-import { t as Route$8 } from "./appointments-CfC64IDS.mjs";
+import { t as Route$8 } from "./appointments-Bh0nYZq2.mjs";
 import { t as Route$9 } from "./auth-CyVGWgkH.mjs";
 import { t as Route$10 } from "./checkout.return-BoZSDKbP.mjs";
-import { t as Route$11 } from "./dashboard-BsTQpoai.mjs";
-import { t as Route$12 } from "./leads-DOxTh3jI.mjs";
+import { t as Route$11 } from "./dashboard-B4R7hl6V.mjs";
+import { t as Route$12 } from "./leads-CbVEt9Yz.mjs";
 import { t as Route$13 } from "./onboarding-CpcNoY5k.mjs";
 import { r as verifyWebhook } from "./stripe.server-D6VjEd18.mjs";
 import { t as Route$14 } from "./route-teEVkAjr.mjs";
 import { t as Route$15 } from "./settings-6-yHDII5.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BubVSuZb.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-K2piUrBx.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
-var styles_default = "/assets/styles-CPtacmZ6.css";
+var styles_default = "/assets/styles-NJwDYgN9.css";
 function reportLovableError(error, context = {}) {
 	if (typeof window === "undefined") return;
 	window.__lovableEvents?.captureException?.(error, {
