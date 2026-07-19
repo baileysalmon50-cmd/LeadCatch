@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { formatBusinessHours, type BusinessHourRow } from "@/lib/businessHours";
 import { normalizeDialedNumber } from "@/lib/phone";
 
 type RetellInboundWebhookPayload = {
@@ -37,10 +38,12 @@ function toStringOrUndefined(value: unknown): string | undefined {
 function inboundResponse(input?: {
   shopName?: unknown;
   greeting?: unknown;
+  businessHours?: unknown;
 }): RetellInboundWebhookResponse {
   const dynamicVariables: Record<string, string> = {
     shop_name: toStringOrUndefined(input?.shopName) || DEFAULT_SHOP_NAME,
     greeting: toStringOrUndefined(input?.greeting) || DEFAULT_GREETING,
+    business_hours: toStringOrUndefined(input?.businessHours) || "not available",
   };
 
   return {
@@ -135,14 +138,28 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
           });
         }
 
-        const {
-          data: settings,
-          error: settingsError,
-        } = await supabaseAdmin
-          .from("settings")
-          .select("ai_greeting")
-          .eq("user_id", profile.id)
-          .maybeSingle();
+        const [settingsResult, hoursResult] = await Promise.all([
+          supabaseAdmin.from("settings").select("ai_greeting").eq("user_id", profile.id).maybeSingle(),
+          supabaseAdmin
+            .from("business_hours")
+            .select("day_of_week, is_open, open_time, close_time, break_start, break_end")
+            .eq("user_id", profile.id)
+            .order("day_of_week", { ascending: true }),
+        ]);
+
+        const settings = settingsResult.data;
+        const settingsError = settingsResult.error;
+
+        if (hoursResult.error) {
+          console.error("[webhook.call-inbound] Hours lookup failed", {
+            user_id: profile.id,
+            error: hoursResult.error,
+          });
+        }
+
+        const businessHours = hoursResult.error
+          ? null
+          : formatBusinessHours((hoursResult.data ?? []) as BusinessHourRow[]);
 
         if (settingsError) {
           console.error("[webhook.call-inbound] Settings lookup failed", {
@@ -155,6 +172,7 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
               inboundResponse({
                 shopName: profile.business_name,
                 greeting: DEFAULT_GREETING,
+                businessHours,
               }),
             ),
             {
@@ -169,6 +187,7 @@ export const Route = createFileRoute("/api/public/webhook/call-inbound")({
             inboundResponse({
               shopName: profile.business_name,
               greeting: settings?.ai_greeting,
+              businessHours,
             }),
           ),
           {
